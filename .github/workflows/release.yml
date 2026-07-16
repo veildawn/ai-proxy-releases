@@ -2,8 +2,11 @@ name: Release
 
 # Runs in THIS public repo (Actions are free for public repos) and builds the
 # packaged artifacts from the PRIVATE source repo veildawn/ai-proxy-service,
-# then publishes a GitHub Release here. Two ways to cut a release:
-#   * workflow_dispatch — enter the version + source ref manually.
+# then publishes a GitHub Release here. This is the ONLY producer of the
+# packaged artifacts — the source repo's own Release workflow builds the
+# container image and dispatches this one. Two ways to cut a release:
+#   * workflow_dispatch — what the source repo's tag build triggers (and the
+#     manual escape hatch: enter the version + source ref yourself).
 #   * push a v* tag to THIS repo — builds the same-named ref of the source repo.
 # Requires SOURCE_REPO_TOKEN: a PAT with Contents:read on the private source
 # repo (stored as a secret in this repo). Publishing the release uses this
@@ -110,15 +113,41 @@ jobs:
         run: |
           VERSION="${{ needs.prepare.outputs.version }}"
           VERSION="${VERSION#v}"
+          # install.sh copies config.example.yaml out of the archive to seed
+          # config.yaml, so shipping the binary alone breaks every fresh install.
+          stage="$(mktemp -d)"
+          cp dist/ai-proxy-service "$stage/"
+          cp config.example.yaml .env.example "$stage/"
           # The self-updater matches assets by the _linux_<arch>.tar.gz suffix
           # and extracts the "ai-proxy-service" entry — keep both names stable.
           tar -czf "dist/ai-proxy-service_${VERSION}_linux_${{ matrix.goarch }}.tar.gz" \
-            -C dist ai-proxy-service
+            -C "$stage" .
+          rm -rf "$stage"
+          echo "== archive contents =="
+          tar -tzf "dist/ai-proxy-service_${VERSION}_linux_${{ matrix.goarch }}.tar.gz"
+
+      # Fetched by the one-line installer and the docker quickstart, so they are
+      # versioned alongside the binaries they know how to install. Arch-neutral —
+      # stage them once rather than racing two uploads of the same names.
+      - name: Stage loose assets
+        if: matrix.goarch == 'amd64'
+        run: |
+          mkdir -p extras
+          cp deploy/scripts/install.sh extras/install.sh
+          cp deploy/docker/docker-compose.release.yml extras/docker-compose.yml
+          cp deploy/docker/.env.example extras/env.example
 
       - uses: actions/upload-artifact@v7
         with:
           name: archive-linux-${{ matrix.goarch }}
           path: dist/*.tar.gz
+          retention-days: 3
+
+      - uses: actions/upload-artifact@v7
+        if: matrix.goarch == 'amd64'
+        with:
+          name: extras
+          path: extras/*
           retention-days: 3
 
   release:
@@ -132,7 +161,37 @@ jobs:
 
       - name: Generate checksums
         working-directory: dist
-        run: sha256sum *.tar.gz > checksums.txt
+        # "<sha256>  <name>" — the exact format internal/update verifies against.
+        run: |
+          sha256sum *.tar.gz > checksums.txt
+          cat checksums.txt
+
+      - name: Release notes
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+          SOURCE_REF: ${{ needs.prepare.outputs.source_ref }}
+        run: |
+          cat > notes.md <<EOF
+          ## Install
+
+          \`\`\`bash
+          curl -fsSL https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/install.sh | sudo bash
+          \`\`\`
+
+          ### Docker
+
+          \`\`\`bash
+          curl -fsSL https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/docker-compose.yml -o docker-compose.yml
+          curl -fsSL https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/env.example -o .env
+          # fill in the secrets in .env, then:
+          docker compose up -d
+          \`\`\`
+
+          Image: \`ghcr.io/veildawn/ai-proxy-service:${VERSION#v}\`
+
+          Linux amd64/arm64 binaries plus \`checksums.txt\`. Built from source ref
+          \`${SOURCE_REF}\`; source and docs live in the private source repository.
+          EOF
 
       - name: Publish release
         uses: softprops/action-gh-release@v3
@@ -142,10 +201,5 @@ jobs:
           # trigger simply attaches the release to the tag that already exists.
           tag_name: ${{ needs.prepare.outputs.version }}
           name: ${{ needs.prepare.outputs.version }}
-          body: |
-            Automated release build of `ai-proxy-service` ${{ needs.prepare.outputs.version }}
-            (built from source ref `${{ needs.prepare.outputs.source_ref }}`).
-
-            Linux amd64/arm64 binaries plus `checksums.txt`. Source and docs live
-            in the private source repository.
+          body_path: notes.md
           files: dist/*

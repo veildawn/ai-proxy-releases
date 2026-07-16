@@ -1,16 +1,16 @@
 name: Release
 
-# Runs in THIS public repo (Actions are free for public repos) and builds the
-# packaged artifacts from the PRIVATE source repo veildawn/ai-proxy-service,
-# then publishes a GitHub Release here. This is the ONLY producer of the
-# packaged artifacts — the source repo's own Release workflow builds the
-# container image and dispatches this one. Two ways to cut a release:
-#   * workflow_dispatch — what the source repo's tag build triggers (and the
-#     manual escape hatch: enter the version + source ref yourself).
+# Runs in THIS public repo (Actions are free for public repos) and builds every
+# release artifact from the PRIVATE source repo veildawn/ai-proxy-service: the
+# linux archives, the loose install assets, and the multi-arch ghcr image. The
+# source repo has no workflows at all, so this is the whole release. Two ways to
+# cut one:
+#   * workflow_dispatch — enter the version + source ref.
 #   * push a v* tag to THIS repo — builds the same-named ref of the source repo.
-# Requires SOURCE_REPO_TOKEN: a PAT with Contents:read on the private source
-# repo (stored as a secret in this repo). Publishing the release uses this
-# repo's own GITHUB_TOKEN — no cross-repo write token is needed.
+# Run the CI workflow against the same ref first; nothing else tests it.
+# Secrets: SOURCE_REPO_TOKEN — PAT with Contents:read on the source repo.
+#          GHCR_TOKEN       — PAT with write:packages (see the image job).
+# Publishing the release itself uses this repo's own GITHUB_TOKEN.
 
 on:
   workflow_dispatch:
@@ -30,6 +30,7 @@ permissions:
 
 env:
   SOURCE_REPO: veildawn/ai-proxy-service
+  IMAGE: ghcr.io/veildawn/ai-proxy-service
 
 jobs:
   # Resolve version + source ref once so build and release agree regardless of
@@ -41,15 +42,25 @@ jobs:
       source_ref: ${{ steps.v.outputs.source_ref }}
     steps:
       - id: v
+        # The inputs go through env, never inline into the script: an inline
+        # ${{ }} is substituted before bash parses it, so the shape check below
+        # would run too late to matter.
+        env:
+          IN_VERSION: ${{ inputs.version }}
+          IN_SOURCE_REF: ${{ inputs.source_ref }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            V="${{ inputs.version }}"
-            R="${{ inputs.source_ref }}"
+            V="$IN_VERSION"
+            R="$IN_SOURCE_REF"
           else
             V="${GITHUB_REF_NAME}"
             R="${GITHUB_REF_NAME}"
           fi
           case "$V" in v*) : ;; *) V="v$V" ;; esac
+          case "$V" in
+            v[0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "::error::version must look like vX.Y.Z, got '$V'"; exit 1 ;;
+          esac
           echo "version=$V" >> "$GITHUB_OUTPUT"
           echo "source_ref=$R" >> "$GITHUB_OUTPUT"
           echo "Resolved version=$V source_ref=$R"
@@ -149,6 +160,59 @@ jobs:
           name: extras
           path: extras/*
           retention-days: 3
+
+  # The multi-arch image, built from the same source ref as the archives so a
+  # version means one thing across both install paths.
+  image:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.SOURCE_REPO }}
+          ref: ${{ needs.prepare.outputs.source_ref }}
+          token: ${{ secrets.SOURCE_REPO_TOKEN }}
+          fetch-depth: 0
+
+      - id: v
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          {
+            echo "version=${VERSION#v}"
+            echo "commit=$(git rev-parse HEAD)"
+            echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          # The ghcr package is owned by the user and linked to the source repo,
+          # so this repo's GITHUB_TOKEN cannot write to it. GHCR_TOKEN is a PAT
+          # with write:packages, which is scoped to the user rather than a repo.
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ steps.v.outputs.version }}
+            ${{ env.IMAGE }}:latest
+          build-args: |
+            VERSION=${{ steps.v.outputs.version }}
+            COMMIT=${{ steps.v.outputs.commit }}
+            BUILD_DATE=${{ steps.v.outputs.date }}
+            BUILD_TYPE=release
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   release:
     needs: [prepare, build]

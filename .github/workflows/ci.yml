@@ -1,0 +1,100 @@
+name: CI
+
+# The test suite for the PRIVATE source repo veildawn/ai-proxy-service, run from
+# here because Actions minutes are free on a public repo. The source repo has no
+# workflows of its own, so nothing fires on a push over there: this runs nightly
+# against main, and on demand for any ref (run it before cutting a release).
+# Requires SOURCE_REPO_TOKEN — a PAT with Contents:read on the source repo.
+#
+# Note that the logs of this run are public. Keep it to pass/fail signal; do not
+# echo secrets or dump source into the output.
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: "Source repo ref to test (branch, tag, or SHA)"
+        required: true
+        default: main
+  schedule:
+    # 02:00 Asia/Shanghai. Nothing tests a push to the source repo any more, so
+    # this is the net that catches a regression within a day of landing.
+    - cron: "0 18 * * *"
+
+env:
+  SOURCE_REPO: veildawn/ai-proxy-service
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Tests create one throwaway database per test on this instance instead of
+      # booting an embedded PostgreSQL (internal/testdb honors this override).
+      TEST_DATABASE_DSN: postgres://postgres:postgres@127.0.0.1:5432/postgres?sslmode=disable
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.SOURCE_REPO }}
+          ref: ${{ inputs.source_ref || 'main' }}
+          token: ${{ secrets.SOURCE_REPO_TOKEN }}
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.25"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: gofmt
+        run: |
+          unformatted=$(gofmt -l internal cmd)
+          if [ -n "$unformatted" ]; then
+            echo "These files are not gofmt-clean:"; echo "$unformatted"; exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        continue-on-error: true
+        with:
+          version: latest
+          args: --timeout=5m
+
+      - name: Go test (race + coverage)
+        run: go test -race -covermode=atomic ./...
+
+      - name: Frontend typecheck
+        working-directory: web/ai-proxy-web
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile || pnpm install
+          pnpm typecheck
+
+      - name: Frontend build
+        working-directory: web/ai-proxy-web
+        run: pnpm build
+
+      - name: Smoke test
+        env:
+          JWT_SECRET: smoke-test-jwt-secret-at-least-32-chars!!
+          ENCRYPTION_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+          SMOKE_PG_DSN: postgres://postgres:postgres@127.0.0.1:5432/postgres?sslmode=disable
+        run: make smoke

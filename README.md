@@ -9,6 +9,8 @@ built-in quotas, billing, usage stats and logs.
 
 A single Go binary with the web UI embedded — one process, one port.
 
+This repository ships the release artifacts. The source is private.
+
 ## Features
 
 **Gateway**
@@ -50,55 +52,110 @@ A single Go binary with the web UI embedded — one process, one port.
 
 ## Install
 
-Requires Linux (amd64 or arm64) and PostgreSQL.
+### One-line install (Linux amd64/arm64, systemd)
+
+Downloads the binary, verifies its checksum, and installs a systemd service. You
+do not supply any secrets — the server generates them on first start.
 
 ```sh
-# download and unpack the latest binary
+curl -fsSL https://github.com/veildawn/ai-proxy-releases/releases/latest/download/install.sh | sudo bash
+```
+
+Needs a reachable PostgreSQL. If yours is not at the local default, set
+`DATABASE_URL`:
+
+```sh
+curl -fsSL https://github.com/veildawn/ai-proxy-releases/releases/latest/download/install.sh \
+  | sudo DATABASE_URL='postgres://user:pass@host:5432/ai_proxy?sslmode=disable' bash
+```
+
+Re-running it upgrades in place; your `config.yaml` and `.env` are kept. It
+refuses to downgrade unless you pass `ALLOW_DOWNGRADE=1`. Other knobs:
+`VERSION`, `PORT` (8080), `INSTALL_DIR` (`/opt/ai-proxy-service`), `DATA_DIR`
+(`/var/lib/ai-proxy-service`), `SERVICE_USER` (`aiproxy`).
+
+```sh
+systemctl status ai-proxy-service
+journalctl -u ai-proxy-service -f
+```
+
+### Docker Compose
+
+Brings its own PostgreSQL; the database password is the only thing to decide.
+
+```sh
+curl -fsSL https://github.com/veildawn/ai-proxy-releases/releases/latest/download/docker-compose.yml -o docker-compose.yml
+printf 'POSTGRES_PASSWORD=%s\n' "$(openssl rand -hex 24)" > .env
+docker compose up -d
+```
+
+`config.yaml` and the app secrets are created in the `/data` volume on first
+start. For the other settings — `PORT`, `IMAGE_TAG` to pin a release instead of
+tracking `latest`, and optional injected secrets — download `env.example` from
+the same release and use it as your `.env`. Upgrade with
+`docker compose pull && docker compose up -d`.
+
+### Manual
+
+```sh
 gh release download --repo veildawn/ai-proxy-releases -p '*linux_amd64.tar.gz'
-tar -xzf ai-proxy-service_*_linux_amd64.tar.gz
-```
-
-Write a `config.yaml`. Everything has a usable default except the DSN:
-
-```yaml
-server:
-  port: 8080
-  public_url: http://localhost:8080
-database:
-  dsn: postgres://postgres:postgres@127.0.0.1:5432/ai_proxy?sslmode=disable
-```
-
-Supply the secrets through the environment (or a `.env` beside the binary):
-
-```sh
-export JWT_SECRET="$(openssl rand -base64 48)"        # at least 32 chars
-export ENCRYPTION_KEY="$(openssl rand -base64 32)"    # exactly 32 bytes, base64
-```
-
-Apply the migrations, then serve:
-
-```sh
+tar -xzf ai-proxy-service_*_linux_amd64.tar.gz    # binary + config.example.yaml + .env.example
+cp config.example.yaml config.yaml                # everything has a usable default except the DSN
 ./ai-proxy-service migrate --config config.yaml
 ./ai-proxy-service serve   --config config.yaml
 ```
 
-Open `http://localhost:8080/setup` to create the admin account, then add your
+## First run
+
+Open `http://localhost:8080/setup`. It asks for a **one-time setup token**,
+printed to the log on first start and written next to `config.yaml` (mode 0600):
+
+```sh
+sudo cat /var/lib/ai-proxy-service/setup-token   # one-line install
+sudo cat ./data/setup-token                      # docker compose mounts /data at ./data
+docker compose logs app | grep -A2 'one-time token'
+```
+
+The token dies the moment the super-admin exists. Nobody can create that account
+without it, so a public instance cannot be claimed by a passer-by. Then add your
 upstream accounts under **Accounts**.
+
+## Secrets
+
+`JWT_SECRET` and `ENCRYPTION_KEY` are generated on first start into
+`secrets.env` (0600) beside `config.yaml`, and reused from there — they are never
+rotated for you. **Back up `ENCRYPTION_KEY` with your database: without it the
+stored upstream credentials are permanently undecryptable.** Environment
+variables win over the generated values, so you can inject your own at any time.
+Several instances sharing one database *must* be given identical values, or
+sessions and credentials won't work across them.
+
+## Ports
+
+| Port  | Purpose                                    |
+|-------|--------------------------------------------|
+| 8080  | API + admin panel                          |
+| 1455  | Codex OAuth callback                       |
+| 54545 | Anthropic OAuth callback                   |
+
+The OAuth callback ports only need to be reachable from the browser you link
+accounts with.
 
 ## CLI
 
 ```sh
-ai-proxy-service serve   --config config.yaml   # API + admin panel
-ai-proxy-service migrate --config config.yaml   # apply schema migrations
-ai-proxy-service oauth login --provider codex   # link an upstream account
+ai-proxy-service serve   --config config.yaml               # API + admin panel
+ai-proxy-service migrate --config config.yaml               # apply schema migrations
+ai-proxy-service oauth login --provider codex|anthropic|xai # link an upstream account
+ai-proxy-service version
 ```
 
 ## Verifying a download
 
-Every release ships a `checksums.txt`:
+Every release ships a `checksums.txt` (the installer checks it for you):
 
 ```sh
-gh release download --repo veildawn/ai-proxy-releases -p 'checksums.txt'
+gh release download --repo veildawn/ai-proxy-releases -p 'checksums.txt' -p '*.tar.gz'
 sha256sum -c checksums.txt --ignore-missing
 ```
 

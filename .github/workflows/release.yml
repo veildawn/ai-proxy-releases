@@ -207,6 +207,12 @@ jobs:
   image:
     needs: prepare
     runs-on: ubuntu-latest
+    # packages:write is what lets GITHUB_TOKEN push to ghcr. Naming any
+    # permission here drops the rest to none, hence contents:read — the source
+    # checkout below uses its own PAT, so nothing else needs this token.
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout private source
         uses: actions/checkout@v7
@@ -233,10 +239,10 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          # The ghcr package is owned by the user and linked to the source repo,
-          # so this repo's GITHUB_TOKEN cannot write to it. GHCR_TOKEN is a PAT
-          # with write:packages, which is scoped to the user rather than a repo.
-          password: ${{ secrets.GHCR_TOKEN }}
+          # GITHUB_TOKEN, not a PAT: this repo's token can push to the package
+          # once the job asks for packages:write above. The GHCR_TOKEN this used
+          # to name was never set, so every image job here failed at login.
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: docker/build-push-action@v6
         with:

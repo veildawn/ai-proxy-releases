@@ -22,6 +22,9 @@ on:
         description: "Source repo ref to build (branch, tag, or SHA)"
         required: true
         default: main
+      changelog:
+        description: "更新内容 (Chinese markdown, one bullet per change; omitted from the notes when blank)"
+        required: false
   push:
     tags: ["v*"]
 
@@ -69,11 +72,25 @@ jobs:
     needs: prepare
     strategy:
       matrix:
+        # The build is CGO_ENABLED=0 pure Go, so the darwin and windows targets
+        # cross-compile on a linux runner — no mac/windows runners needed. Only
+        # linux/arm64 keeps a native runner, as it already had one.
         include:
           - runner: ubuntu-latest
+            goos: linux
             goarch: amd64
           - runner: ubuntu-24.04-arm
+            goos: linux
             goarch: arm64
+          - runner: ubuntu-latest
+            goos: darwin
+            goarch: amd64
+          - runner: ubuntu-latest
+            goos: darwin
+            goarch: arm64
+          - runner: ubuntu-latest
+            goos: windows
+            goarch: amd64
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout private source
@@ -105,12 +122,24 @@ jobs:
           go-version: "1.25"
 
       - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
         run: |
           VERSION="${{ needs.prepare.outputs.version }}"
           VERSION="${VERSION#v}"
           COMMIT="$(git rev-parse --short HEAD)"
           BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           MODULE=github.com/veildawn/ai-proxy-service
+          # internal/update looks for this exact name inside the archive, and on
+          # windows it looks for it with the .exe suffix.
+          # Not `[ ... ] && BIN=...`: the runner's shell is `bash -e`, and that
+          # statement returns 1 on every non-windows target, killing the step.
+          BIN=ai-proxy-service
+          if [ "$GOOS" = "windows" ]; then
+            BIN="${BIN}.exe"
+          fi
+          echo "bin=$BIN" >> "$GITHUB_ENV"
           mkdir -p dist
           CGO_ENABLED=0 go build -trimpath -buildvcs=false \
             -ldflags "-s -w \
@@ -118,7 +147,7 @@ jobs:
               -X ${MODULE}/internal/buildinfo.Commit=${COMMIT} \
               -X ${MODULE}/internal/buildinfo.BuildDate=${BUILD_DATE} \
               -X ${MODULE}/internal/buildinfo.BuildType=release" \
-            -o dist/ai-proxy-service ./cmd/server
+            -o "dist/${BIN}" ./cmd/server
 
       - name: Package
         run: |
@@ -127,21 +156,30 @@ jobs:
           # install.sh copies config.example.yaml out of the archive to seed
           # config.yaml, so shipping the binary alone breaks every fresh install.
           stage="$(mktemp -d)"
-          cp dist/ai-proxy-service "$stage/"
+          cp "dist/${bin}" "$stage/"
           cp config.example.yaml .env.example "$stage/"
-          # The self-updater matches assets by the _linux_<arch>.tar.gz suffix
-          # and extracts the "ai-proxy-service" entry — keep both names stable.
-          tar -czf "dist/ai-proxy-service_${VERSION}_linux_${{ matrix.goarch }}.tar.gz" \
-            -C "$stage" .
-          rm -rf "$stage"
+          # internal/update matches assets by the _<goos>_<arch> infix plus the
+          # platform's extension, then extracts the "ai-proxy-service" entry
+          # (".exe" on windows) — keep all three stable. Windows gets a zip so it
+          # opens with a double-click; the updater reads both formats.
+          base="dist/ai-proxy-service_${VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}"
           echo "== archive contents =="
-          tar -tzf "dist/ai-proxy-service_${VERSION}_linux_${{ matrix.goarch }}.tar.gz"
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            # -j: no directory prefix, so entries sit at the zip root the way
+            # tar -C stages them for the other platforms.
+            (cd "$stage" && zip -qrj "${GITHUB_WORKSPACE}/${base}.zip" .)
+            unzip -l "${base}.zip"
+          else
+            tar -czf "${base}.tar.gz" -C "$stage" .
+            tar -tzf "${base}.tar.gz"
+          fi
+          rm -rf "$stage"
 
       # Fetched by the one-line installer and the docker quickstart, so they are
       # versioned alongside the binaries they know how to install. Arch-neutral —
       # stage them once rather than racing two uploads of the same names.
       - name: Stage loose assets
-        if: matrix.goarch == 'amd64'
+        if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
         run: |
           mkdir -p extras
           cp deploy/scripts/install.sh extras/install.sh
@@ -150,12 +188,15 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: archive-linux-${{ matrix.goarch }}
-          path: dist/*.tar.gz
+          name: archive-${{ matrix.goos }}-${{ matrix.goarch }}
+          # Both globs: the windows job produces a .zip and no .tar.gz.
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
           retention-days: 3
 
       - uses: actions/upload-artifact@v7
-        if: matrix.goarch == 'amd64'
+        if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
         with:
           name: extras
           path: extras/*
@@ -226,20 +267,58 @@ jobs:
       - name: Generate checksums
         working-directory: dist
         # "<sha256>  <name>" — the exact format internal/update verifies against.
+        # The .zip has to be in here too: the updater refuses any archive it
+        # cannot find a checksum for, so omitting it silently breaks windows
+        # self-update rather than failing the release.
         run: |
-          sha256sum *.tar.gz > checksums.txt
+          sha256sum *.tar.gz *.zip > checksums.txt
           cat checksums.txt
 
+      # The notes are the only part of a release users read, and this project's
+      # audience is Chinese-speaking — so they are written in Chinese, with no
+      # English prose mixed in. Identifiers, commands and file names stay as
+      # they are; translating those would make them wrong.
       - name: Release notes
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
           SOURCE_REF: ${{ needs.prepare.outputs.source_ref }}
+          CHANGELOG: ${{ inputs.changelog }}
         run: |
-          cat > notes.md <<EOF
-          ## Install
+          : > notes.md
+          if [ -n "$CHANGELOG" ]; then
+            # printf, not a heredoc: the changelog is free text from a dispatch
+            # input, and the unquoted heredoc below would run any `backticks`
+            # it happens to contain.
+            printf '## 更新内容\n\n%s\n\n' "$CHANGELOG" >> notes.md
+          fi
+          cat >> notes.md <<EOF
+          ## 安装
+
+          Linux（systemd）：
 
           \`\`\`bash
           curl -fsSL https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/install.sh | sudo bash
+          \`\`\`
+
+          ### macOS / Windows
+
+          没有安装脚本，也不注册系统服务：解压对应归档，手动运行即可。需要一个
+          可连的 PostgreSQL，用 \`DATABASE_URL\` 或 \`config.yaml\` 里的
+          \`database.dsn\` 指过去。
+
+          macOS（Apple Silicon 取 \`darwin_arm64\`，Intel 取 \`darwin_amd64\`）：
+
+          \`\`\`bash
+          tar -xzf ai-proxy-service_${VERSION#v}_darwin_arm64.tar.gz
+          cp config.example.yaml config.yaml   # 然后改掉里面的 dsn
+          ./ai-proxy-service serve --config config.yaml
+          \`\`\`
+
+          Windows：解压 \`ai-proxy-service_${VERSION#v}_windows_amd64.zip\`，在该目录下执行：
+
+          \`\`\`powershell
+          Copy-Item config.example.yaml config.yaml   # 然后改掉里面的 dsn
+          .\\ai-proxy-service.exe serve --config config.yaml
           \`\`\`
 
           ### Docker
@@ -247,15 +326,20 @@ jobs:
           \`\`\`bash
           curl -fsSL https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/docker-compose.yml -o docker-compose.yml
           curl -fsSL https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/env.example -o .env
-          # fill in the secrets in .env, then:
+          # 填好 .env 里的密钥，然后：
           docker compose up -d
           \`\`\`
 
-          Image: \`ghcr.io/veildawn/ai-proxy-service:${VERSION#v}\`
+          镜像：\`ghcr.io/veildawn/ai-proxy-service:${VERSION#v}\`
 
-          Linux amd64/arm64 binaries plus \`checksums.txt\`. Built from source ref
-          \`${SOURCE_REF}\`; source and docs live in the private source repository.
+          ## 产物
+
+          linux amd64/arm64 与 darwin amd64/arm64 为 \`.tar.gz\`，windows amd64 为
+          \`.zip\`，另有 \`checksums.txt\`。本次构建自源码 ref \`${SOURCE_REF}\`；源码与
+          文档在私有源码仓库。
           EOF
+          echo "== notes.md =="
+          cat notes.md
 
       - name: Publish release
         uses: softprops/action-gh-release@v3

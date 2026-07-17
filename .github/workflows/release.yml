@@ -33,7 +33,10 @@ permissions:
 
 env:
   SOURCE_REPO: veildawn/ai-proxy-service
-  IMAGE: ghcr.io/veildawn/ai-proxy-service
+  # ai-proxy-release, not ai-proxy-service: a repository's GITHUB_TOKEN only
+  # writes packages its own repository owns, and ai-proxy-service belongs to the
+  # source repo — pushing it from here 403s at the blob upload.
+  IMAGE: ghcr.io/veildawn/ai-proxy-release
 
 jobs:
   # Resolve version + source ref once so build and release agree regardless of
@@ -336,7 +339,7 @@ jobs:
           docker compose up -d
           \`\`\`
 
-          镜像：\`ghcr.io/veildawn/ai-proxy-service:${VERSION#v}\`
+          镜像：\`${IMAGE}:${VERSION#v}\`
 
           ## 产物
 

@@ -283,70 +283,19 @@ jobs:
           sha256sum *.tar.gz *.zip > checksums.txt
           cat checksums.txt
 
-      # The notes are the only part of a release users read, and this project's
-      # audience is Chinese-speaking — so they are written in Chinese, with no
-      # English prose mixed in. Identifiers, commands and file names stay as
-      # they are; translating those would make them wrong.
+      # The notes render inside the admin panel's update dialog, which is a
+      # plain-text (whitespace-pre-wrap) box — NOT markdown — and must carry
+      # only 更新内容: no install/deploy steps, no artifact rundown, no markdown
+      # syntax (a `##` would show its literal hashes). So the body IS the
+      # changelog, verbatim. Written in Chinese; see the source repo's
+      # docs/design/update-system.md §5.3 for the format.
       - name: Release notes
         env:
-          VERSION: ${{ needs.prepare.outputs.version }}
-          SOURCE_REF: ${{ needs.prepare.outputs.source_ref }}
           CHANGELOG: ${{ inputs.changelog }}
         run: |
-          : > notes.md
-          if [ -n "$CHANGELOG" ]; then
-            # printf, not a heredoc: the changelog is free text from a dispatch
-            # input, and the unquoted heredoc below would run any `backticks`
-            # it happens to contain.
-            printf '## 更新内容\n\n%s\n\n' "$CHANGELOG" >> notes.md
-          fi
-          cat >> notes.md <<EOF
-          ## 安装
-
-          Linux（systemd）：
-
-          \`\`\`bash
-          curl -fsSL https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/install.sh | sudo bash
-          \`\`\`
-
-          ### macOS / Windows
-
-          没有安装脚本，也不注册系统服务：解压对应归档，手动运行即可。需要一个
-          可连的 PostgreSQL，用 \`DATABASE_URL\` 或 \`config.yaml\` 里的
-          \`database.dsn\` 指过去。
-
-          macOS（Apple Silicon 取 \`darwin_arm64\`，Intel 取 \`darwin_amd64\`）：
-
-          \`\`\`bash
-          tar -xzf ai-proxy-service_${VERSION#v}_darwin_arm64.tar.gz
-          cp config.example.yaml config.yaml   # 然后改掉里面的 dsn
-          ./ai-proxy-service serve --config config.yaml
-          \`\`\`
-
-          Windows：解压 \`ai-proxy-service_${VERSION#v}_windows_amd64.zip\`，在该目录下执行：
-
-          \`\`\`powershell
-          Copy-Item config.example.yaml config.yaml   # 然后改掉里面的 dsn
-          .\\ai-proxy-service.exe serve --config config.yaml
-          \`\`\`
-
-          ### Docker
-
-          \`\`\`bash
-          curl -fsSL https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/docker-compose.yml -o docker-compose.yml
-          curl -fsSL https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/env.example -o .env
-          # 填好 .env 里的密钥，然后：
-          docker compose up -d
-          \`\`\`
-
-          镜像：\`${IMAGE}:${VERSION#v}\`
-
-          ## 产物
-
-          linux amd64/arm64 与 darwin amd64/arm64 为 \`.tar.gz\`，windows amd64 为
-          \`.zip\`，另有 \`checksums.txt\`。本次构建自源码 ref \`${SOURCE_REF}\`；源码与
-          文档在私有源码仓库。
-          EOF
+          # printf, not a heredoc: the changelog is free text from a dispatch
+          # input, and an unquoted heredoc would run any `backticks` in it.
+          printf '%s\n' "$CHANGELOG" > notes.md
           echo "== notes.md =="
           cat notes.md
 

@@ -71,11 +71,14 @@ jobs:
       - name: go vet
         run: go vet ./...
 
+      # v9 runs on Node 24 (v6 is Node 20, deprecated on runners). Pin golangci-lint
+      # v2.x: action v6's "latest" still resolved to v1.64.8, which is built with
+      # Go 1.24 and refuses to load a go 1.25 module (exit code 3).
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v9
         continue-on-error: true
         with:
-          version: latest
+          version: v2.12.2
           args: --timeout=5m
 
       - name: Go test (race + coverage)

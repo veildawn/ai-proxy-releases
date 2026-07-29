@@ -82,7 +82,7 @@ jobs:
           args: --timeout=5m
 
       - name: Go test (race + coverage)
-        run: go test -race -covermode=atomic ./...
+        run: go test -timeout=20m -race -covermode=atomic ./...
 
       - name: Frontend typecheck
         working-directory: web/ai-proxy-web

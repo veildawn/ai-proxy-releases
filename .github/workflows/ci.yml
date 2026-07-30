@@ -8,6 +8,15 @@ name: CI
 #
 # Note that the logs of this run are public. Keep it to pass/fail signal; do not
 # echo secrets or dump source into the output.
+#
+# The wall clock is set by internal/api/gateway: one package with ~10 minutes of
+# sequential DB-backed tests, so package-level parallelism cannot dent it. Its
+# top-level tests are instead round-robined across the gateway-N shards below
+# via a -run regex, `rest` covers every other package, and lint / frontend /
+# smoke each get their own lane. Every cache is stored in THIS repo —
+# actions/cache is scoped to the repo the workflow runs in, not the repo the
+# source came from — and this nightly run keeps them warm (idle caches evict
+# after 7 days).
 
 on:
   workflow_dispatch:
@@ -23,9 +32,68 @@ on:
 
 env:
   SOURCE_REPO: veildawn/ai-proxy-service
+  GATEWAY_PKG: ./internal/api/gateway
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.SOURCE_REPO }}
+          ref: ${{ inputs.source_ref || 'main' }}
+          token: ${{ secrets.SOURCE_REPO_TOKEN }}
+
+      # cache: false on every setup-go here: its built-in cache keys only on
+      # go.sum, so parallel jobs would all race to save one shared entry and
+      # every other job's build cache would be lost. The explicit actions/cache
+      # steps below key per job instead.
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.25"
+          cache: false
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: go-mod-${{ hashFiles('go.sum') }}
+          restore-keys: go-mod-
+
+      # GOCACHE evolves with the source, so the key is per-run (always saves a
+      # fresh snapshot) and restore-keys picks up the newest previous one.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: go-build-lint-${{ github.run_id }}
+          restore-keys: go-build-lint-
+
+      - name: gofmt
+        run: |
+          unformatted=$(gofmt -l internal cmd)
+          if [ -n "$unformatted" ]; then
+            echo "These files are not gofmt-clean:"; echo "$unformatted"; exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      # v9 runs on Node 24 (v6 is Node 20, deprecated on runners). Pin golangci-lint
+      # v2.x: action v6's "latest" still resolved to v1.64.8, which is built with
+      # Go 1.24 and refuses to load a go 1.25 module (exit code 3).
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        continue-on-error: true
+        with:
+          version: v2.12.2
+          args: --timeout=5m
+
   test:
+    strategy:
+      fail-fast: false
+      matrix:
+        # The gateway-N count must match GATEWAY_SHARDS in the test step.
+        shard: [gateway-0, gateway-1, gateway-2, rest]
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -56,45 +124,127 @@ jobs:
       - uses: actions/setup-go@v7
         with:
           go-version: "1.25"
+          cache: false
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: go-mod-${{ hashFiles('go.sum') }}
+          restore-keys: go-mod-
+
+      # The three gateway shards compile the same test binary, so they share
+      # one key family (whoever saves first wins; the contents are equivalent).
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: go-build-test-${{ startsWith(matrix.shard, 'gateway') && 'gateway' || 'rest' }}-${{ github.run_id }}
+          restore-keys: go-build-test-${{ startsWith(matrix.shard, 'gateway') && 'gateway' || 'rest' }}-
+
+      # -covermode=atomic is gone deliberately: nothing ever consumed the
+      # numbers, and on top of -race the atomic counters were a real slice of
+      # the gateway package's ten minutes. Re-add it only with a consumer.
+      - name: Go test (race)
+        env:
+          SHARD: ${{ matrix.shard }}
+          GATEWAY_SHARDS: "3"
+        run: |
+          if [ "$SHARD" = "rest" ]; then
+            # Every package except the gateway, which has its own shards.
+            go list ./... | grep -v -x "$(go list "$GATEWAY_PKG")" \
+              | xargs go test -timeout=20m -race
+          else
+            idx="${SHARD##*-}"
+            # Round-robin over the sorted top-level test names, so adding or
+            # removing a test rebalances the shards automatically. Go test
+            # names are plain identifiers — joining with | is regex-safe.
+            pattern=$(go test -list '.*' "$GATEWAY_PKG" | grep '^Test' | sort \
+              | awk -v n="$GATEWAY_SHARDS" -v i="$idx" 'NR % n == i' | paste -sd'|' -)
+            if [ -z "$pattern" ]; then
+              echo "::error::gateway shard $idx matched no tests"; exit 1
+            fi
+            go test -timeout=20m -race -run "^($pattern)$" "$GATEWAY_PKG"
+          fi
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.SOURCE_REPO }}
+          ref: ${{ inputs.source_ref || 'main' }}
+          token: ${{ secrets.SOURCE_REPO_TOKEN }}
 
       - uses: actions/setup-node@v7
         with:
           node-version: "22"
 
-      - name: gofmt
-        run: |
-          unformatted=$(gofmt -l internal cmd)
-          if [ -n "$unformatted" ]; then
-            echo "These files are not gofmt-clean:"; echo "$unformatted"; exit 1
-          fi
+      # Must run after setup-node (the shim lands next to that node) and before
+      # `pnpm store path` below.
+      - run: corepack enable
 
-      - name: go vet
-        run: go vet ./...
+      - name: Locate pnpm store
+        id: pnpm-store
+        working-directory: web/ai-proxy-web
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
 
-      # v9 runs on Node 24 (v6 is Node 20, deprecated on runners). Pin golangci-lint
-      # v2.x: action v6's "latest" still resolved to v1.64.8, which is built with
-      # Go 1.24 and refuses to load a go 1.25 module (exit code 3).
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v9
-        continue-on-error: true
+      - uses: actions/cache@v4
         with:
-          version: v2.12.2
-          args: --timeout=5m
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-store-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('web/ai-proxy-web/pnpm-lock.yaml') }}
+          restore-keys: pnpm-store-${{ runner.os }}-${{ runner.arch }}-
 
-      - name: Go test (race + coverage)
-        run: go test -timeout=20m -race -covermode=atomic ./...
-
-      - name: Frontend typecheck
+      - name: Typecheck and build
         working-directory: web/ai-proxy-web
         run: |
-          corepack enable
           pnpm install --frozen-lockfile || pnpm install
           pnpm typecheck
+          pnpm build
 
-      - name: Frontend build
-        working-directory: web/ai-proxy-web
-        run: pnpm build
+  smoke:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.SOURCE_REPO }}
+          ref: ${{ inputs.source_ref || 'main' }}
+          token: ${{ secrets.SOURCE_REPO_TOKEN }}
 
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.25"
+          cache: false
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: go-mod-${{ hashFiles('go.sum') }}
+          restore-keys: go-mod-
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: go-build-smoke-${{ github.run_id }}
+          restore-keys: go-build-smoke-
+
+      # make smoke builds bin/ai-proxy-service itself (scripts/smoke-test.sh
+      # runs `make build`), so this job needs no frontend: the SPA assets are
+      # whatever the checkout carries, which the smoke flow does not exercise.
       - name: Smoke test
         env:
           JWT_SECRET: smoke-test-jwt-secret-at-least-32-chars!!

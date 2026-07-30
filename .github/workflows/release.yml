@@ -96,22 +96,39 @@ jobs:
             goarch: amd64
     runs-on: ${{ matrix.runner }}
     steps:
+      # Depth 1 (the default): the only git use below is rev-parse HEAD, so the
+      # full-history fetch was pure wait.
       - name: Checkout private source
         uses: actions/checkout@v7
         with:
           repository: ${{ env.SOURCE_REPO }}
           ref: ${{ needs.prepare.outputs.source_ref }}
           token: ${{ secrets.SOURCE_REPO_TOKEN }}
-          fetch-depth: 0
 
       - uses: actions/setup-node@v7
         with:
           node-version: "22"
 
+      # Must run after setup-node (the shim lands next to that node) and before
+      # `pnpm store path` below.
+      - run: corepack enable
+
+      - name: Locate pnpm store
+        id: pnpm-store
+        working-directory: web/ai-proxy-web
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      # All caches live in this repo (actions/cache is scoped to the repo the
+      # workflow runs in); the nightly CI run keeps the shared ones warm.
+      - uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-store-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('web/ai-proxy-web/pnpm-lock.yaml') }}
+          restore-keys: pnpm-store-${{ runner.os }}-${{ runner.arch }}-
+
       - name: Build frontend
         working-directory: web/ai-proxy-web
         run: |
-          corepack enable
           pnpm install --frozen-lockfile || pnpm install
           pnpm build
 
@@ -120,9 +137,27 @@ jobs:
           rm -rf internal/api/spa/static/*
           cp -R web/ai-proxy-web/build/client/* internal/api/spa/static/
 
+      # cache: false — setup-go's built-in cache keys only on go.sum, so the
+      # five legs would race to save one shared entry and whichever GOOS/GOARCH
+      # saved first would be the only build cache ever kept.
       - uses: actions/setup-go@v7
         with:
           go-version: "1.25"
+          cache: false
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: go-mod-${{ hashFiles('go.sum') }}
+          restore-keys: go-mod-
+
+      # Keyed per target: GOCACHE entries are GOOS/GOARCH-specific. Per-run key
+      # + prefix restore = always save a fresh snapshot, restore the newest.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: go-build-rel-${{ matrix.goos }}-${{ matrix.goarch }}-${{ github.run_id }}
+          restore-keys: go-build-rel-${{ matrix.goos }}-${{ matrix.goarch }}-
 
       - name: Build binary
         env:
@@ -205,10 +240,15 @@ jobs:
           path: extras/*
           retention-days: 3
 
-  # The multi-arch image, built from the same source ref as the archives so a
-  # version means one thing across both install paths.
+  # The multi-arch image, assembled from the same binaries the build matrix
+  # just produced so a version means one thing across both install paths.
+  # Rebuilding go + the frontend inside buildx used to be the slowest part of
+  # the whole release (~3 minutes, no persistent GOCACHE in there): now
+  # BINARY_SRC=prebuilt makes the Dockerfile COPY the matrix output and skip
+  # both builder stages entirely, and the remaining runtime layers come out of
+  # the gha layer cache.
   image:
-    needs: prepare
+    needs: [prepare, build]
     runs-on: ubuntu-latest
     # packages:write is what lets GITHUB_TOKEN push to ghcr. Naming any
     # permission here drops the rest to none, hence contents:read — the source
@@ -217,23 +257,36 @@ jobs:
       contents: read
       packages: write
     steps:
+      # Still needed even with prebuilt binaries: the build context carries the
+      # Dockerfile, entrypoint, and config.example.yaml.
       - name: Checkout private source
         uses: actions/checkout@v7
         with:
           repository: ${{ env.SOURCE_REPO }}
           ref: ${{ needs.prepare.outputs.source_ref }}
           token: ${{ secrets.SOURCE_REPO_TOKEN }}
-          fetch-depth: 0
 
-      - id: v
-        env:
-          VERSION: ${{ needs.prepare.outputs.version }}
+      # Downloaded outside the workspace so the archives don't ride along in
+      # the docker build context; only the extracted binaries below do.
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: archive-linux-*
+          path: ${{ runner.temp }}/prebuilt-archives
+          merge-multiple: true
+
+      # dist/prebuilt/linux/<arch>/ai-proxy-service is the exact layout the
+      # Dockerfile's binary-prebuilt stage COPYs from (keyed by TARGETARCH).
+      # Extract-then-move rather than naming the tar member: the archives store
+      # entries with a ./ prefix.
+      - name: Unpack prebuilt binaries
         run: |
-          {
-            echo "version=${VERSION#v}"
-            echo "commit=$(git rev-parse HEAD)"
-            echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          } >> "$GITHUB_OUTPUT"
+          for arch in amd64 arm64; do
+            mkdir -p "dist/prebuilt/linux/${arch}" "${RUNNER_TEMP}/unpack"
+            tar -xzf "${RUNNER_TEMP}"/prebuilt-archives/ai-proxy-service_*_linux_"${arch}".tar.gz -C "${RUNNER_TEMP}/unpack"
+            mv "${RUNNER_TEMP}/unpack/ai-proxy-service" "dist/prebuilt/linux/${arch}/ai-proxy-service"
+            rm -rf "${RUNNER_TEMP}/unpack"
+          done
+          ls -lR dist/prebuilt
 
       - uses: docker/setup-qemu-action@v4
       - uses: docker/setup-buildx-action@v4
@@ -247,6 +300,14 @@ jobs:
           # to name was never set, so every image job here failed at login.
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - id: v
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: echo "version=${VERSION#v}" >> "$GITHUB_OUTPUT"
+
+      # VERSION/COMMIT/BUILD_DATE/BUILD_TYPE args are gone: they only fed the
+      # go-builder stage, which a prebuilt build never runs — the values are
+      # already baked into the binaries by the build matrix.
       - uses: docker/build-push-action@v7
         with:
           context: .
@@ -257,10 +318,7 @@ jobs:
             ${{ env.IMAGE }}:${{ steps.v.outputs.version }}
             ${{ env.IMAGE }}:latest
           build-args: |
-            VERSION=${{ steps.v.outputs.version }}
-            COMMIT=${{ steps.v.outputs.commit }}
-            BUILD_DATE=${{ steps.v.outputs.date }}
-            BUILD_TYPE=release
+            BINARY_SRC=prebuilt
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

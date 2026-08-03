@@ -2,77 +2,60 @@
 
 English | [简体中文](README.zh.md)
 
-Self-hosted AI gateway with a multi-tenant admin panel. Pool your Claude, Codex,
-Kiro, Kimi, Cursor and xAI subscription and API accounts behind one
-OpenAI/Anthropic-compatible endpoint, and hand the whole team API keys with
-built-in quotas, billing, usage stats and logs.
+Got Claude, Codex, Kiro, Kimi, Cursor, or xAI subscriptions (or API keys) and want the whole team on them? Drop the accounts into a pool, share one endpoint, and see who used what, what it cost, and which account is down — from one admin panel.
 
-A single Go binary with the web UI embedded — one process, one port.
+One binary, one port. This repo ships the install packages; the source is private.
 
-This repository ships the release artifacts. The source is private.
+## What you get
 
-## Features
+**Clients**
 
-**Gateway**
-
-- One endpoint for every client: OpenAI `/v1/chat/completions` and Anthropic
-  `/v1/messages`, translated across protocols in both directions.
-- Streaming SSE, tools / `tool_choice`, image content, reasoning/thinking and
-  streamed tool events survive the translation. Anything that cannot be
-  preserved returns a 400 rather than being silently dropped.
-- Providers: Codex, Claude, xAI, Kiro, Kimi, Cursor — via OAuth (PKCE / device
-  code) or a manual access token. Any OpenAI-/Anthropic-compatible upstream
-  (DeepSeek, Zhipu, OpenCode Zen, local vLLM, …) can be added from the admin UI.
-- Model routing by explicit route or prefix, with upstream model rewriting.
+- Point your usual AI clients at one address and you're in.
+- Streaming, tool calls, images, and thinking/reasoning come through. If something can't be translated, you get an error — nothing is silently dropped.
+- Codex, Claude, xAI, Kiro, Kimi, Cursor — sign in via the browser, or paste a token. Other compatible upstreams (DeepSeek, Zhipu, local models, …) can be added in the admin UI.
+- Route models by name or prefix, and rewrite to whatever the upstream actually expects.
 
 **Account pool**
 
-- Round-robin scheduling with session affinity.
-- Bounded cross-account failover plus in-place retries on upstream errors.
-- Per-account concurrency caps, so pooled subscriptions don't trip provider 429s.
-- Per-account outbound proxy routing.
-- Account health and pool utilization on the dashboard.
+- Accounts take turns; the same conversation sticks to the same account when it can.
+- If one account fails, another picks up — the whole pool doesn't die with one bad key.
+- Cap concurrency per account so you don't burn upstream rate limits.
+- Each account can use its own outbound proxy.
+- Dashboard shows which accounts are alive and how hard the pool is working.
 
-**Tenants & billing**
+**Team & billing**
 
-- Users, API keys, and subscription plans: fixed-window / daily / weekly quotas
-  plus a monthly budget.
-- Open or invite-code-only registration.
-- Built-in model pricing, synced for built-in models on startup; custom pricing
-  is left untouched.
-- Usage and cost stats, with Analysis and Realtime dashboards.
+- Users, API keys, plans: daily / weekly / fixed-window quotas, plus a monthly budget.
+- Open registration, or invite codes only.
+- Built-in prices for common models, refreshed on startup; your custom prices stay put.
+- Usage and spend panels.
 
-**Operations**
+**Day-to-day**
 
-- Versioned SQL migrations with a schema-version check at startup.
-- Application, request-error and audit logs, each with a retention window.
-- Optional Redis backend for quotas and OAuth refresh locks.
+- Upgrades migrate the database for you; a version mismatch refuses to start so you don't walk into a broken schema.
+- App logs, request errors, and audit logs — each with its own retention.
+- Optional Redis for quotas and OAuth refresh locks.
 - One-click self-update from the admin panel.
-- Bilingual UI (zh-CN / en), light and dark themes.
+- Chinese and English UI, light and dark themes.
 
 ## Install
 
-### One-line install (Linux amd64/arm64, systemd)
+### One-line install (Linux amd64 / arm64)
 
-Downloads the binary, verifies its checksum, and installs a systemd service. You
-do not supply any secrets — the server generates them on first start.
+Downloads, checksums, and installs a systemd service. You don't supply secrets — the server generates them on first start.
 
 ```sh
 curl -fsSL https://github.com/veildawn/ai-proxy-releases/releases/latest/download/install.sh | sudo bash
 ```
 
-Needs a reachable PostgreSQL. If yours is not at the local default, set
-`DATABASE_URL`:
+Needs a reachable PostgreSQL. If yours isn't at the local default, pass the URL:
 
 ```sh
 curl -fsSL https://github.com/veildawn/ai-proxy-releases/releases/latest/download/install.sh \
   | sudo DATABASE_URL='postgres://user:pass@host:5432/ai_proxy?sslmode=disable' bash
 ```
 
-Re-running it upgrades in place; your `config.yaml` and `.env` are kept. It
-refuses to downgrade unless you pass `ALLOW_DOWNGRADE=1`. Other knobs:
-`VERSION`, `PORT` (8080), `INSTALL_DIR` (`/opt/ai-proxy-service`), `DATA_DIR`
-(`/var/lib/ai-proxy-service`), `SERVICE_USER` (`aiproxy`).
+Run it again to upgrade in place; `config.yaml` and `.env` are kept. It won't downgrade unless you pass `ALLOW_DOWNGRADE=1`. Other knobs: `VERSION`, `PORT` (8080), `INSTALL_DIR` (`/opt/ai-proxy-service`), `DATA_DIR` (`/var/lib/ai-proxy-service`), `SERVICE_USER` (`aiproxy`).
 
 ```sh
 systemctl status ai-proxy-service
@@ -81,7 +64,7 @@ journalctl -u ai-proxy-service -f
 
 ### Docker Compose
 
-Brings its own PostgreSQL; the database password is the only thing to decide.
+Brings its own PostgreSQL; you only pick the database password.
 
 ```sh
 curl -fsSL https://github.com/veildawn/ai-proxy-releases/releases/latest/download/docker-compose.yml -o docker-compose.yml
@@ -89,26 +72,25 @@ printf 'POSTGRES_PASSWORD=%s\n' "$(openssl rand -hex 24)" > .env
 docker compose up -d
 ```
 
-`config.yaml` and the app secrets are created in the `/data` volume on first
-start. For the other settings — `PORT`, `IMAGE_TAG` to pin a release instead of
-tracking `latest`, and optional injected secrets — download `env.example` from
-the same release and use it as your `.env`. Upgrade with
-`docker compose pull && docker compose up -d`.
+Config and secrets land in the `/data` volume on first start. To change the port, pin a version (`IMAGE_TAG`), or inject your own secrets, download `env.example` from the same release and use it as `.env`. Upgrade with:
+
+```sh
+docker compose pull && docker compose up -d
+```
 
 ### Manual
 
 ```sh
 gh release download --repo veildawn/ai-proxy-releases -p '*linux_amd64.tar.gz'
-tar -xzf ai-proxy-service_*_linux_amd64.tar.gz    # binary + config.example.yaml + .env.example
-cp config.example.yaml config.yaml                # everything has a usable default except the DSN
+tar -xzf ai-proxy-service_*_linux_amd64.tar.gz    # binary + example config
+cp config.example.yaml config.yaml                # usable defaults except the database URL
 ./ai-proxy-service migrate --config config.yaml
 ./ai-proxy-service serve   --config config.yaml
 ```
 
 ## First run
 
-Open `http://localhost:8080/setup`. It asks for a **one-time setup token**,
-printed to the log on first start and written next to `config.yaml` (mode 0600):
+Open `http://localhost:8080/setup`. It asks for a **one-time setup token** — printed in the log on first start, and saved next to the config file:
 
 ```sh
 sudo cat /var/lib/ai-proxy-service/setup-token   # one-line install
@@ -116,36 +98,27 @@ sudo cat ./data/setup-token                      # docker compose mounts /data a
 docker compose logs app | grep -A2 'one-time token'
 ```
 
-The token dies the moment the super-admin exists. Nobody can create that account
-without it, so a public instance cannot be claimed by a passer-by. Then add your
-upstream accounts under **Accounts**.
+Once the admin exists, the token is gone. Nobody can create that account without it, so a public instance can't be claimed by a passer-by. Then add your upstream accounts under **Accounts**.
 
 ## Secrets
 
-`JWT_SECRET` and `ENCRYPTION_KEY` are generated on first start into
-`secrets.env` (0600) beside `config.yaml`, and reused from there — they are never
-rotated for you. **Back up `ENCRYPTION_KEY` with your database: without it the
-stored upstream credentials are permanently undecryptable.** Environment
-variables win over the generated values, so you can inject your own at any time.
-Several instances sharing one database *must* be given identical values, or
-sessions and credentials won't work across them.
+`JWT_SECRET` and `ENCRYPTION_KEY` are generated on first start into `secrets.env` beside the config (mode 0600), and reused from there — they are never rotated for you. **Back up `ENCRYPTION_KEY` with your database: without it, stored upstream credentials are permanently unreadable.** Environment variables win, so you can inject your own anytime. Several instances on one database **must** share the same values, or sessions and credentials won't line up.
 
 ## Ports
 
-| Port  | Purpose                                    |
-|-------|--------------------------------------------|
-| 8080  | API + admin panel                          |
-| 1455  | Codex OAuth callback                       |
-| 54545 | Anthropic OAuth callback                   |
+| Port  | What for                    |
+|-------|-----------------------------|
+| 8080  | API + admin panel           |
+| 1455  | Codex OAuth callback        |
+| 54545 | Anthropic OAuth callback    |
 
-The OAuth callback ports only need to be reachable from the browser you link
-accounts with.
+The OAuth ports only need to reach the browser you use to link accounts.
 
 ## CLI
 
 ```sh
 ai-proxy-service serve   --config config.yaml               # API + admin panel
-ai-proxy-service migrate --config config.yaml               # apply schema migrations
+ai-proxy-service migrate --config config.yaml               # apply DB migrations
 ai-proxy-service oauth login --provider codex|anthropic|xai # link an upstream account
 ai-proxy-service version
 ```

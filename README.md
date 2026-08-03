@@ -4,7 +4,7 @@ English | [简体中文](README.zh.md)
 
 Got Claude, Codex, Kiro, Kimi, Cursor, or xAI subscriptions (or API keys) and want the whole team on them? Drop the accounts into a pool, share one endpoint, and see who used what, what it cost, and which account is down — from one admin panel.
 
-One binary, one port. This repo ships the install packages; the source is private.
+One binary, one port.
 
 ## What you get
 
@@ -131,7 +131,3 @@ Every release ships a `checksums.txt` (the installer checks it for you):
 gh release download --repo veildawn/ai-proxy-releases -p 'checksums.txt' -p '*.tar.gz'
 sha256sum -c checksums.txt --ignore-missing
 ```
-
-## License
-
-MIT

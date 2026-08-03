@@ -5,7 +5,7 @@
 手里有 Claude、Codex、Kiro、Kimi、Cursor、xAI 的订阅或 API 号，想给整个团队用？
 丢进这个池子，大家共用一个入口；谁用了多少、花了多少、哪个号挂了，后台一眼能看清。
 
-一个程序、一个端口。本仓库只放安装包，源码不开源。
+一个程序、一个端口。
 
 ## 能干什么
 
@@ -132,7 +132,3 @@ ai-proxy-service version
 gh release download --repo veildawn/ai-proxy-releases -p 'checksums.txt' -p '*.tar.gz'
 sha256sum -c checksums.txt --ignore-missing
 ```
-
-## License
-
-MIT

@@ -1,7 +1,7 @@
 {
   "version": "v0.11.9",
-  "source_ref": "main",
-  "since_sha": "f143109e8a07265f1882c9a3b7dc3438d09db091",
+  "source_ref": "9ffeb9fb2a347ec26121b698ca8167f2d980495a",
+  "since_sha": "9ffeb9fb2a347ec26121b698ca8167f2d980495a",
   "changelog": "",
-  "_retry": 2
+  "note": "Already published 2026-08-11; since_sha==source_ref keeps re-pushes from cutting another release."
 }

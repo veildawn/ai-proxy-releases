@@ -82,7 +82,6 @@ jobs:
           IN_SOURCE_REF: ${{ inputs.source_ref }}
           IN_CHANGELOG: ${{ inputs.changelog }}
           IN_SINCE_SHA: ${{ inputs.since_sha }}
-          EVENT_NAME: ${{ github.event_name }}
           REF_NAME: ${{ github.ref_name }}
           SOURCE_REPO_TOKEN: ${{ secrets.SOURCE_REPO_TOKEN }}
         run: |
@@ -91,9 +90,13 @@ jobs:
           SINCE_SHA=""
           SHOULD_RELEASE=true
 
-          if [ "$EVENT_NAME" = "workflow_dispatch" ] || [ "$EVENT_NAME" = "workflow_call" ]; then
+          # github.event_name stays the CALLER's event when this file is used via
+          # workflow_call (so a push-triggered request relay still reports
+          # "push" here). Treat a non-empty inputs.version as the dispatch/call
+          # path; only bare tag pushes fall through to GITHUB_REF_NAME.
+          if [ -n "${IN_VERSION:-}" ]; then
             V="$IN_VERSION"
-            R="$IN_SOURCE_REF"
+            R="${IN_SOURCE_REF:-main}"
             CHANGELOG="${IN_CHANGELOG:-}"
             SINCE_SHA="${IN_SINCE_SHA:-}"
           else
@@ -126,6 +129,11 @@ jobs:
                 SHOULD_RELEASE=false
               elif [ -z "$CHANGELOG" ]; then
                 # Plain-text notes for the admin update panel (no markdown).
+                # Shallow fetch may not contain since_sha; deepen if needed.
+                if ! git -C "$tmp" cat-file -e "${SINCE_SHA}^{commit}" 2>/dev/null; then
+                  git -C "$tmp" fetch -q --deepen=200 origin "$R" || true
+                  git -C "$tmp" fetch -q --depth=1 origin "$SINCE_SHA" || true
+                fi
                 {
                   echo "更新"
                   git -C "$tmp" log --reverse --format='· %s' "${SINCE_SHA}..${RESOLVED}" \

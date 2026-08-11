@@ -9,6 +9,7 @@ on:
   push:
     paths:
       - ".github/release-requests/*.json"
+      - ".github/workflows/release-request.yml"
 
 # Must be at least as wide as the reusable Release workflow: GITHUB_TOKEN
 # permissions on a caller cap everything the callee can ask for.

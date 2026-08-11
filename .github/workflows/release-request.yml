@@ -10,8 +10,11 @@ on:
     paths:
       - ".github/release-requests/*.json"
 
+# Must be at least as wide as the reusable Release workflow: GITHUB_TOKEN
+# permissions on a caller cap everything the callee can ask for.
 permissions:
-  contents: read
+  contents: write
+  packages: write
   actions: write
 
 jobs:

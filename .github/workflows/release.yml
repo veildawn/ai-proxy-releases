@@ -3,13 +3,14 @@ name: Release
 # Runs in THIS public repo (Actions are free for public repos) and builds every
 # release artifact from the PRIVATE source repo veildawn/ai-proxy-service: the
 # linux archives, the loose install assets, and the multi-arch ghcr image. The
-# source repo has no workflows at all, so this is the whole release. Two ways to
+# source repo has no workflows at all, so this is the whole release. Ways to
 # cut one:
 #   * workflow_dispatch — enter the version + source ref.
 #   * push a v* tag to THIS repo — builds the same-named ref of the source repo.
+#   * workflow_call — used by release-request.yml when a request JSON is pushed
+#     (agent/bot-friendly; workflow_dispatch is often denied to installation tokens).
 # Run the CI workflow against the same ref first; nothing else tests it.
 # Secrets: SOURCE_REPO_TOKEN — PAT with Contents:read on the source repo.
-#          GHCR_TOKEN       — PAT with write:packages (see the image job).
 # Publishing the release itself uses this repo's own GITHUB_TOKEN.
 
 on:
@@ -18,13 +19,36 @@ on:
       version:
         description: "Release version tag, e.g. v1.2.3"
         required: true
+        type: string
       source_ref:
         description: "Source repo ref to build (branch, tag, or SHA)"
         required: true
         default: main
+        type: string
       changelog:
-        description: "更新内容 (Chinese markdown, one bullet per change; omitted from the notes when blank)"
+        description: "更新内容 (Chinese plain text, one bullet per change; omitted from the notes when blank)"
         required: false
+        type: string
+  workflow_call:
+    inputs:
+      version:
+        description: "Release version tag, e.g. v1.2.3"
+        required: true
+        type: string
+      source_ref:
+        description: "Source repo ref to build (branch, tag, or SHA)"
+        required: true
+        type: string
+      changelog:
+        description: "更新内容 (Chinese plain text)"
+        required: false
+        type: string
+        default: ""
+      since_sha:
+        description: "If set, abort when source_ref resolves to this SHA; also used to auto-fill changelog"
+        required: false
+        type: string
+        default: ""
   push:
     tags: ["v*"]
 
@@ -40,12 +64,14 @@ env:
 
 jobs:
   # Resolve version + source ref once so build and release agree regardless of
-  # whether we were triggered by a manual dispatch or a v* tag push.
+  # whether we were triggered by a manual dispatch, a reusable call, or a v* tag.
   prepare:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.v.outputs.version }}
       source_ref: ${{ steps.v.outputs.source_ref }}
+      changelog: ${{ steps.v.outputs.changelog }}
+      should_release: ${{ steps.v.outputs.should_release }}
     steps:
       - id: v
         # The inputs go through env, never inline into the script: an inline
@@ -54,25 +80,94 @@ jobs:
         env:
           IN_VERSION: ${{ inputs.version }}
           IN_SOURCE_REF: ${{ inputs.source_ref }}
+          IN_CHANGELOG: ${{ inputs.changelog }}
+          IN_SINCE_SHA: ${{ inputs.since_sha }}
+          REF_NAME: ${{ github.ref_name }}
+          SOURCE_REPO_TOKEN: ${{ secrets.SOURCE_REPO_TOKEN }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          set -euo pipefail
+          CHANGELOG=""
+          SINCE_SHA=""
+          SHOULD_RELEASE=true
+
+          # github.event_name stays the CALLER's event when this file is used via
+          # workflow_call (so a push-triggered request relay still reports
+          # "push" here). Treat a non-empty inputs.version as the dispatch/call
+          # path; only bare tag pushes fall through to GITHUB_REF_NAME.
+          if [ -n "${IN_VERSION:-}" ]; then
             V="$IN_VERSION"
-            R="$IN_SOURCE_REF"
+            R="${IN_SOURCE_REF:-main}"
+            CHANGELOG="${IN_CHANGELOG:-}"
+            SINCE_SHA="${IN_SINCE_SHA:-}"
           else
-            V="${GITHUB_REF_NAME}"
-            R="${GITHUB_REF_NAME}"
+            V="$REF_NAME"
+            R="$REF_NAME"
           fi
+
           case "$V" in v*) : ;; *) V="v$V" ;; esac
           case "$V" in
             v[0-9]*.[0-9]*.[0-9]*) ;;
             *) echo "::error::version must look like vX.Y.Z, got '$V'"; exit 1 ;;
           esac
-          echo "version=$V" >> "$GITHUB_OUTPUT"
-          echo "source_ref=$R" >> "$GITHUB_OUTPUT"
-          echo "Resolved version=$V source_ref=$R"
+
+          # Resolve source_ref to a full SHA and optionally fill the changelog
+          # from commits since since_sha (or abort when there is nothing new).
+          if [ -n "${SOURCE_REPO_TOKEN:-}" ]; then
+            tmp="$(mktemp -d)"
+            git -C "$tmp" init -q
+            git -C "$tmp" remote add origin "https://x-access-token:${SOURCE_REPO_TOKEN}@github.com/${SOURCE_REPO}.git"
+            if [ -n "$SINCE_SHA" ]; then
+              git -C "$tmp" fetch -q --depth=100 origin "$R"
+            else
+              git -C "$tmp" fetch -q --depth=1 origin "$R"
+            fi
+            RESOLVED="$(git -C "$tmp" rev-parse FETCH_HEAD)"
+            echo "Resolved source SHA: $RESOLVED (from ref $R)"
+            if [ -n "$SINCE_SHA" ]; then
+              if [ "$RESOLVED" = "$SINCE_SHA" ]; then
+                echo "::warning::source_ref $R resolves to $RESOLVED, same as since_sha — nothing new to release"
+                SHOULD_RELEASE=false
+              elif [ -z "$CHANGELOG" ]; then
+                # Plain-text notes for the admin update panel (no markdown).
+                # Shallow fetch may not contain since_sha; deepen if needed.
+                if ! git -C "$tmp" cat-file -e "${SINCE_SHA}^{commit}" 2>/dev/null; then
+                  git -C "$tmp" fetch -q --deepen=200 origin "$R" || true
+                  git -C "$tmp" fetch -q --depth=1 origin "$SINCE_SHA" || true
+                fi
+                {
+                  echo "更新"
+                  git -C "$tmp" log --reverse --format='· %s' "${SINCE_SHA}..${RESOLVED}" \
+                    | sed '/^· Merge /d'
+                } > /tmp/auto-changelog.txt
+                if [ "$(wc -l < /tmp/auto-changelog.txt)" -le 1 ]; then
+                  echo "::warning::no commits between $SINCE_SHA and $RESOLVED"
+                  SHOULD_RELEASE=false
+                else
+                  CHANGELOG="$(cat /tmp/auto-changelog.txt)"
+                  echo "== auto changelog =="
+                  printf '%s\n' "$CHANGELOG"
+                fi
+              fi
+            fi
+            R="$RESOLVED"
+            rm -rf "$tmp"
+          else
+            echo "::warning::SOURCE_REPO_TOKEN missing; leaving source_ref unresolved"
+          fi
+
+          {
+            echo "version=$V"
+            echo "source_ref=$R"
+            echo "should_release=$SHOULD_RELEASE"
+            echo "changelog<<EOF_CHANGELOG"
+            printf '%s\n' "$CHANGELOG"
+            echo "EOF_CHANGELOG"
+          } >> "$GITHUB_OUTPUT"
+          echo "Resolved version=$V source_ref=$R should_release=$SHOULD_RELEASE"
 
   build:
     needs: prepare
+    if: needs.prepare.outputs.should_release == 'true'
     strategy:
       matrix:
         # The build is CGO_ENABLED=0 pure Go, so the darwin and windows targets
@@ -249,6 +344,7 @@ jobs:
   # the gha layer cache.
   image:
     needs: [prepare, build]
+    if: needs.prepare.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     # packages:write is what lets GITHUB_TOKEN push to ghcr. Naming any
     # permission here drops the rest to none, hence contents:read — the source
@@ -324,6 +420,7 @@ jobs:
 
   release:
     needs: [prepare, build]
+    if: needs.prepare.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v8
@@ -349,7 +446,7 @@ jobs:
       # docs/design/update-system.md §5.3 for the format.
       - name: Release notes
         env:
-          CHANGELOG: ${{ inputs.changelog }}
+          CHANGELOG: ${{ needs.prepare.outputs.changelog }}
         run: |
           # printf, not a heredoc: the changelog is free text from a dispatch
           # input, and an unquoted heredoc would run any `backticks` in it.

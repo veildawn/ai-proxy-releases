@@ -1,0 +1,77 @@
+name: Release request
+
+# Agent/bot-friendly entrypoint: push a JSON file under
+# .github/release-requests/ and this relays into the reusable Release workflow.
+# Needed because installation tokens (cursor[bot]) can push code but cannot
+# create workflow_dispatch events.
+
+on:
+  push:
+    paths:
+      - ".github/release-requests/*.json"
+      - ".github/workflows/release-request.yml"
+
+# Must be at least as wide as the reusable Release workflow: GITHUB_TOKEN
+# permissions on a caller cap everything the callee can ask for.
+permissions:
+  contents: write
+  packages: write
+  actions: write
+
+jobs:
+  parse:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.p.outputs.version }}
+      source_ref: ${{ steps.p.outputs.source_ref }}
+      changelog: ${{ steps.p.outputs.changelog }}
+      since_sha: ${{ steps.p.outputs.since_sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+
+      - id: p
+        env:
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          REQ=""
+          if [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
+            REQ="$(git diff --name-only "$BEFORE" "$SHA" -- '.github/release-requests/*.json' | head -n1 || true)"
+          fi
+          if [ -z "$REQ" ]; then
+            REQ="$(ls -1t .github/release-requests/*.json | head -n1)"
+          fi
+          echo "Using $REQ"
+          python3 -c '
+          import json, os, pathlib, sys
+          req = json.loads(pathlib.Path(sys.argv[1]).read_text())
+          version = (req.get("version") or "").strip()
+          source_ref = (req.get("source_ref") or "main").strip()
+          changelog = req.get("changelog") or ""
+          since_sha = (req.get("since_sha") or "").strip()
+          if not version:
+              raise SystemExit("version is required")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+              f.write(f"version={version}\n")
+              f.write(f"source_ref={source_ref}\n")
+              f.write(f"since_sha={since_sha}\n")
+              f.write("changelog<<EOF_CHANGELOG\n")
+              f.write(changelog)
+              if changelog and not changelog.endswith("\n"):
+                  f.write("\n")
+              f.write("EOF_CHANGELOG\n")
+          print("version=%s source_ref=%s since_sha=%s" % (version, source_ref, since_sha or "(none)"))
+          ' "$REQ"
+
+  release:
+    needs: parse
+    uses: ./.github/workflows/release.yml
+    with:
+      version: ${{ needs.parse.outputs.version }}
+      source_ref: ${{ needs.parse.outputs.source_ref }}
+      changelog: ${{ needs.parse.outputs.changelog }}
+      since_sha: ${{ needs.parse.outputs.since_sha }}
+    secrets: inherit

@@ -1,6 +1,6 @@
 {
   "version": "v0.17.80",
-  "source_ref": "1bd307cfa26f261e931ca9c63c1168ed8b96d5fb",
+  "source_ref": "10f20a8ae16bf6bc67b59f0183a281d6d49a183d",
   "since_sha": "3038ac638be6e3532f70b0cc82cb22b512e9b01a",
-  "changelog": "- feat(openai): add gpt-image-2.5 builtin model and bump to 1.2.4"
+  "changelog": "- fix(gateway): switch accounts on 5xx and return retryable 503s"
 }

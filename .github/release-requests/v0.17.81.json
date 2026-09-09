@@ -1,0 +1,6 @@
+{
+  "version": "v0.17.81",
+  "source_ref": "e2c80fc52653849cce633cf62eb603b01441a0e3",
+  "since_sha": "10f20a8ae16bf6bc67b59f0183a281d6d49a183d",
+  "changelog": "- feat(playground): add image generation and editing support in playground"
+}

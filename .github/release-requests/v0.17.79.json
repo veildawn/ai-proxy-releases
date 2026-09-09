@@ -2,5 +2,5 @@
   "version": "v0.17.79",
   "source_ref": "3038ac638be6e3532f70b0cc82cb22b512e9b01a",
   "since_sha": "badd46112d7f872146e16a282f1430dd5463f25d",
-  "changelog": "- fix(gateway): safely fallback start-plan to coding-plan during model probe and refresh quota\n- feat(gateway): per-user concurrency limits with queueing and a live meter (v0.17.78)\n- feat(quota): AI Proxy peers report plan, carpool and balance allowance (v0.17.77)\n- feat(providers): relay system kinds with quota presets and brand tiles (v0.17.76)"
+  "changelog": "- re-trigger: fix(gateway): safely fallback start-plan to coding-plan during model probe and refresh quota\n- feat(gateway): per-user concurrency limits with queueing and a live meter (v0.17.78)\n- feat(quota): AI Proxy peers report plan, carpool and balance allowance (v0.17.77)\n- feat(providers): relay system kinds with quota presets and brand tiles (v0.17.76)"
 }

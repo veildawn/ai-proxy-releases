@@ -1,0 +1,6 @@
+{
+  "version": "v0.17.80",
+  "source_ref": "1bd307cfa26f261e931ca9c63c1168ed8b96d5fb",
+  "since_sha": "3038ac638be6e3532f70b0cc82cb22b512e9b01a",
+  "changelog": "- feat(openai): add gpt-image-2.5 builtin model and bump to 1.2.4"
+}

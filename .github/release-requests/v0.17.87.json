@@ -1,0 +1,6 @@
+{
+  "version": "v0.17.87",
+  "source_ref": "4793521a41e3d71453f182db9cb95b838453baee",
+  "since_sha": "5a00ed09",
+  "changelog": "- feat(gateway): fold chat/completions onto the images route for image-surface models — gpt-image-2 / grok-imagine-image / gemini-*-image now answer on the chat endpoint by forwarding to /images/generations and wrapping the reply as a chat.completion\n- fix(admin): stop DISTINCT on json quota_limits in user list"
+}

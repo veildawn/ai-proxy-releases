@@ -1,0 +1,6 @@
+{
+  "version": "v0.17.88",
+  "source_ref": "04ba71edaa6d5003bf1a08a19b0413c9cc5118cd",
+  "since_sha": "4793521a41e3d71453f182db9cb95b838453baee",
+  "changelog": "- feat(oauth): cookie-capture sign-ins for SSO providers that yield no redirect code — providers whose login leaves only httpOnly cookies (Xiaomi account SSO is the first) can now offer a real authorize-login: a Chrome window opens, the host watches the cookie jar until the required cookies land, and the harvest is delivered to the plugin automatically; operators no longer paste cookies into a form\n- fix(quota): quota cards now meter each key's own usage — a key with its own limit is no longer painted with the whole plan's spend, manual plan resets re-anchor the card's windows so pre-reset history is not billed to the key, and lifelong-cap-only keys fall back to their true draw on the shared cap"
+}

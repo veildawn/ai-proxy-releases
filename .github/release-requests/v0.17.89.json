@@ -1,0 +1,6 @@
+{
+  "version": "v0.17.89",
+  "source_ref": "de9421197c214a0e564774a60e3741344948b6cb",
+  "since_sha": "04ba71edaa6d5003bf1a08a19b0413c9cc5118cd",
+  "changelog": "- feat(oauth): cookie-capture sign-ins now work on headless servers via a QR relay — headless Chrome drives the login and mirrors the page to the add-account screen as live screenshots, the operator scans the QR with their phone, and the harvested cookies land exactly as before; manual cookie paste remains the fallback for hosts with no Chrome at all\n- chore(market): mimo-desktop 2.1.2 staged in the marketplace — first consumer of the capture flow, now covered by end-to-end Start and live full-flow tests"
+}

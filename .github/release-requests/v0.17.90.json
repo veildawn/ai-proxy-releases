@@ -1,0 +1,6 @@
+{
+  "version": "v0.17.90",
+  "source_ref": "04a9a627463de4ff6be1583700da488d101bbbff",
+  "since_sha": "de9421197c214a0e564774a60e3741344948b6cb",
+  "changelog": "- fix(accounts): the QR capture screen no longer renders the legacy login-address/paste panel beside it — once the relayed screenshot arrives only the scan view stays, and hosts with no Chrome keep the paste fallback\n- fix(accounts): plugin credential updates carrying numbers (mimo-desktop's sts_renewed_at epoch millis) are persisted instead of being discarded — the missing half of the scan-to-chat fix that left freshly minted sessions unsaved\n- companion marketplace release mimo-desktop 2.1.3 mints the app session on the first probe after a capture, so scanned accounts serve chat immediately"
+}

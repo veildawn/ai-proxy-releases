@@ -232,6 +232,14 @@ jobs:
           rm -rf internal/api/spa/static/*
           cp -R web/ai-proxy-web/build/client/* internal/api/spa/static/
 
+      # The Codex connect tool (/connect/codex.tgz) is assembled at serve time
+      # from files go:embed reads out of internal/codexext/pkg — which git only
+      # tracks as .gitkeep. Without this staging step the binary still builds,
+      # but the endpoint answers 503 "not staged into this build" and the
+      # npx onboarding shipped in v0.17.86+ is dead on arrival.
+      - name: Stage codex tool
+        run: make stage-codex-tool
+
       # cache: false — setup-go's built-in cache keys only on go.sum, so the
       # five legs would race to save one shared entry and whichever GOOS/GOARCH
       # saved first would be the only build cache ever kept.

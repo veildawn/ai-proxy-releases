@@ -63,6 +63,21 @@ systemctl status ai-proxy-service
 journalctl -u ai-proxy-service -f
 ```
 
+### Homebrew（macOS 和 Linux）
+
+```sh
+brew install veildawn/tap/ai-proxy-service
+```
+
+所有东西都装在 `$(brew --prefix)/var/ai-proxy-service`——`config.yaml`、`.env`、`secrets.env`、`data/`。把 `database.dsn` 或 `DATABASE_URL` 指向一个能连的 PostgreSQL（或 MySQL 8.0.13+），然后当服务跑或手动跑：
+
+```sh
+brew services start ai-proxy-service
+# 或者：ai-proxy-service serve --config "$(brew --prefix)/var/ai-proxy-service/config.yaml"
+```
+
+`brew upgrade ai-proxy-service` 升级到最新版——每次发版都会自动更新 tap 里的 formula，启动时自动改库表。种子配置里关掉了应用内自升级，因为二进制归 brew 管。
+
 ### Docker Compose
 
 自带 PostgreSQL，你只需要定一个数据库密码。
@@ -95,6 +110,7 @@ cp config.example.yaml config.yaml                # 除了数据库地址，其�
 
 ```sh
 sudo cat /var/lib/ai-proxy-service/setup-token   # 一键安装
+cat "$(brew --prefix)/var/ai-proxy-service/setup-token"   # homebrew
 sudo cat ./data/setup-token                      # docker compose 把 /data 挂在 ./data
 docker compose logs app | grep -A2 'one-time token'
 ```

@@ -11,6 +11,9 @@ name: Release
 #     (agent/bot-friendly; workflow_dispatch is often denied to installation tokens).
 # Run the CI workflow against the same ref first; nothing else tests it.
 # Secrets: SOURCE_REPO_TOKEN — PAT with Contents:read on the source repo.
+#   TAP_REPO_TOKEN — PAT with Contents:write on veildawn/homebrew-tap, used to
+#   push the formula bump; a classic SOURCE_REPO_TOKEN already has that scope
+#   and is used when TAP_REPO_TOKEN is unset.
 # Publishing the release itself uses this repo's own GITHUB_TOKEN.
 
 on:
@@ -472,3 +475,64 @@ jobs:
           name: ${{ needs.prepare.outputs.version }}
           body_path: notes.md
           files: dist/*
+
+  # Re-render veildawn/homebrew-tap's formula from homebrew/ai-proxy-service.rb
+  # so `brew install` lands the release just published and `brew upgrade` stays
+  # a working update path. Runs after the release exists: the formula's urls
+  # point at it. GITHUB_TOKEN only writes this repo, so pushing the tap needs a
+  # PAT — set TAP_REPO_TOKEN (Contents:write on veildawn/homebrew-tap); a
+  # classic SOURCE_REPO_TOKEN already carries that scope and is the fallback.
+  homebrew:
+    needs: [prepare, release]
+    if: needs.prepare.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - uses: actions/checkout@v7
+
+      - uses: actions/checkout@v7
+        with:
+          repository: veildawn/homebrew-tap
+          path: tap
+          token: ${{ secrets.TAP_REPO_TOKEN || secrets.SOURCE_REPO_TOKEN }}
+
+      - name: Render formula
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          v="${VERSION#v}"
+          cp homebrew/ai-proxy-service.rb tap/Formula/ai-proxy-service.rb
+          sed -i "s|@VERSION@|${v}|g" tap/Formula/ai-proxy-service.rb
+          # Re-hash the archives rather than trusting checksums.txt: the values
+          # shipped to users and the values written here then share one source.
+          for spec in darwin_amd64 darwin_arm64 linux_amd64 linux_arm64; do
+            sum="$(sha256sum "dist/ai-proxy-service_${v}_${spec}.tar.gz" | cut -d' ' -f1)"
+            var="SHA256_$(printf '%s' "$spec" | tr '[:lower:]' '[:upper:]')"
+            sed -i "s|@${var}@|${sum}|g" tap/Formula/ai-proxy-service.rb
+          done
+          if grep -n '@' tap/Formula/ai-proxy-service.rb; then
+            echo "::error::unsubstituted placeholders left in the formula"
+            exit 1
+          fi
+          echo "== rendered formula =="
+          cat tap/Formula/ai-proxy-service.rb
+
+      - name: Commit and push tap
+        working-directory: tap
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          git add Formula/ai-proxy-service.rb
+          if git diff --cached --quiet; then
+            echo "formula already at ${VERSION} — nothing to push"
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]" \
+            -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -m "ai-proxy-service ${VERSION#v}"
+          git push

@@ -487,11 +487,6 @@ jobs:
     if: needs.prepare.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v8
-        with:
-          path: dist
-          merge-multiple: true
-
       - uses: actions/checkout@v7
 
       - uses: actions/checkout@v7
@@ -499,6 +494,11 @@ jobs:
           repository: veildawn/homebrew-tap
           path: tap
           token: ${{ secrets.TAP_REPO_TOKEN || secrets.SOURCE_REPO_TOKEN }}
+
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
 
       - name: Render formula
         env:

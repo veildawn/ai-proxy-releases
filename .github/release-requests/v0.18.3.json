@@ -1,0 +1,6 @@
+{
+  "version": "v0.18.3",
+  "source_ref": "1e9a869f8b1218eeb06e4c95411998d55c726c82",
+  "since_sha": "b3d24dd0062e1d5594fff02a0617700435e599d8",
+  "changelog": "### 修复\n\n- **逐跳头不再被转发给上游。** 反向代理若按 WebSocket 透传模板写死 `proxy_set_header Connection \"upgrade\"`,每个到达网关的请求都会带着 `Connection: upgrade`;插件模块通道把客户端头原样交给 provider 钩子、钩子再回传给上游,而 HTTP/2 上游(如 opencode.ai)会直接拒绝连接级头——表现为该 provider 所有请求 503。现在入口统一剥离 RFC 9110 逐跳头(Connection/Upgrade/Keep-Alive/TE/Trailer/Transfer-Encoding/Proxy-*),以及 Connection 值里点名的其他头,任何通道都无法再转发放行。驱动通道本就只转发白名单头,不受影响。\n\n- **修复伴随:** pluginrt 两处格式化对齐,使 `make verify` 的 fmt 门重新通过。"
+}

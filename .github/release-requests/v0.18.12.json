@@ -1,0 +1,6 @@
+{
+  "version": "v0.18.12",
+  "source_ref": "c25094932a851d9b25efde903f15be24848b8406",
+  "since_sha": "f9264a10a9bfdcbfcf08734f3c56896035e4f8b9",
+  "changelog": "### 改进\n\n- **Codex 连接工具的模型目录显示名与 Codex 官方命名对齐。** `/model` 选择器里的网关模型不再显示 `gpt-6-astra`、`claude-opus-5` 这类原始 id,而是 `GPT-6 Astra`、`Claude Opus 5`:常量按官方拼写还原(gpt→GPT、glm→GLM、mimo→MiMo、minimax→MiniMax),代际按各家写法处理(GPT-6 / GLM-5.3 连字符、Gemini 3.8 独立单词、Claude Sonnet 4-6 拼回 4.6),名字中间的连接词保持小写(Kimi for Coding),带 provider 前缀的 id 保留前缀(antigravity/gemini-3.6-flash)。`slug` 与 `description` 仍是原样 id,目录 schema 与请求路径不变;网关更新后运行 `codex-ai-proxy refresh-models` 即可生效。\n"
+}

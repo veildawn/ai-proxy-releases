@@ -1,0 +1,6 @@
+{
+  "version": "v0.20.1",
+  "source_ref": "v0.20.1",
+  "since_sha": "3f98b1cc9e2e65f16ffcebb5adbd41bd48a5e34d",
+  "changelog": "### 修复\n\n- **插件安装**:声明非聊天协议(`decisions`、`realtime`)的市场插件在自身 dry run 中被拒——merge 回环把派生的 `family` 值送回只认 `openai`/`anthropic` 的白名单,报 \"family must be 'openai' or 'anthropic'\"。`normalizeFamily` 现接受 `normalizeProtocol` 的全部规范协议,typesafe 与 agentjev 可正常安装。"
+}

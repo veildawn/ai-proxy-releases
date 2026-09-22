@@ -1,0 +1,6 @@
+{
+  "version": "v0.19.3",
+  "source_ref": "v0.19.3",
+  "since_sha": "1eacf747b499aaa8ac4dd5ad415ce2da93793a25",
+  "changelog": "### 新增\n\n- **Codex 桌面端登录直达工作台：** `login` / `switch` / `run` 现在把桌面端登录当作一件事处理——写入 `~/.codex/auth.json`（`auth_mode: apikey`），同时把 `~/.codex/.codex-global-state.json` 里的首次引导标记（`electron:onboarding-projectless-completed`）标为已完成。此前只写凭据，桌面端虽能跳过 ChatGPT 登录页，却仍停在「欢迎使用 ChatGPT 桌面版」引导问答；两处一起写才会直接进入工作台。\n- **不覆盖你自己的登录：** `auth.json` 里已有 ChatGPT 会话或其他 `sk-` 形式的 API key 时会跳过并提示；状态文件损坏或形状异常时报错退出，不做半写。`logout` / `restore` 撤销本工具写入的这两处标记。\n\n### 改进与修复\n\n- **撤销桌面补丁（闭环）：** `patch-desktop --unpatch` 现在是打补丁的反操作——恢复安装文件、删除 `*.ai-proxy-orig` 备份，并撤掉本工具写入的 `[mcp_servers.codex_app]` 空传输与仅由本工具写入的 `[desktop]` 编码模式；用户自己的传输、工具列表或其他桌面设置不动。交互菜单「设置」新增「撤销桌面补丁」，走二次确认，重复撤销是空操作。\n- `codex-ai-proxy --help` 补上 `patch-desktop [--unpatch]` 与桌面端登录行为说明。\n- 修正 `refresh-models` 在网关休眠时仍会做桌面配置修复的过期测试断言。\n"
+}

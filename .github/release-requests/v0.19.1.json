@@ -1,0 +1,6 @@
+{
+  "version": "v0.19.1",
+  "source_ref": "6b02dd3d3a0a45dad7a714fb0003a677c0c65924",
+  "since_sha": "7c6096a24541b8a428c754fee33cf778765ca747",
+  "changelog": "### 改进与修复\n\n- **Codex 连接工具支持 Codex Desktop 推理档位补丁与桌面运行配置自动修复：**\n  - 增加 `patch-desktop` 模块，自动检测并对本机安装的 Codex Desktop 注入推理档位白名单补丁，解锁 `max` 最大推理强度限制，适配 DeepSeek、GLM、Kimi 等支持高阶思考的模型；\n  - 支持 `--unpatch` 自动恢复官方原始安装文件；\n  - 修复 Codex Desktop 运行时配置冲突：自动为 `[mcp_servers.codex_app]` 注入合法的未启用 command 传输声明，彻底防止启动时报 `invalid transport in mcp_servers.codex_app`；\n  - 自动将 `conversationDetailMode` 从锁定 ChatGPT Work 模式的 `STEPS_PROSE` 修正为标准编码模式 `STEPS_COMMANDS`；\n  - 兼容 Linux、macOS 与 Windows 系统上各版本 Electron/Vite 打包产物；\n  - `switch` 与 `refresh-models` 命令自动执行静默修复与补丁检测，并在刷新模型列表时保持与网关最新发布同步。"
+}

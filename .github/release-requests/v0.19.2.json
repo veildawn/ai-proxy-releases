@@ -1,0 +1,6 @@
+{
+  "version": "v0.19.2",
+  "source_ref": "1eacf7474411ee8d348a2118ca27ea19b4898399",
+  "since_sha": "6b02dd3d3a0a45dad7a714fb0003a677c0c65924",
+  "changelog": "### 改进与修复\n\n- **Codex 桌面接入完善：**\n  - 交互菜单（`codex-ai-proxy`）在「设置」分区新增 **「补丁 Codex 桌面版」（Patch Codex Desktop）** 选项，支持在终端菜单中一键检查、打补丁与修复配置；\n  - 登录与切换时自动为 Codex 写入 `~/.codex/auth.json`（`auth_mode: apikey`），使 Codex 桌面端直接进入主界面，彻底跳过 ChatGPT 强制登录与引导页；\n  - 登出或还原配置时自动清理该凭据文件，保持环境干净。"
+}

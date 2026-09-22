@@ -1,0 +1,6 @@
+{
+  "version": "v0.20.0",
+  "source_ref": "v0.20.0",
+  "since_sha": "81bc2c4236d988f6775471b680e4040d6e5f684a",
+  "changelog": "### 决策模型支持（/v1/systemone）\n\nTypeSafe 风格的类型化决策模型成为一等协议:`decisions` 协议 + `decision` 模态贯穿路由、catalog、计费、指标、探针与插件 manifest 校验,公共入口 `/v1/systemone` 与各上游 SDK 路径一致——客户端只需改 `base_url`。\n\n- **TypeSafe Jev(托管)**:声明式插件,直连 `api.typesafe.ai`,无需 Wasm 模块\n- **AgentJev-0.6B(本地)**:Wasm 插件把 Jev 信封双向翻译成 `jev_service` 的 `/api/evaluate` 形状\n- **Laya(本地)**:旁车服务同样讲 Jev wire,经自定义 provider 接入\n- 三者在同一公开接口下并存;混合账号池中不会说 decisions 的成员会被剔除并留痕\n\n### 内部决策调用面\n\n`internal/decisions` 让网关自己的模型判断(路由分类、上下文压缩等)走与用户请求完全相同的 catalog/conductor/执行管线:回环 provider 优先于托管、递归调用按上下文标记拒绝、调用记入决策 trace 且标记 internal、不占用配额不计费。\n\n### 精度与可观测性\n\n- 上游错误响应的 `Retry-After` 透传给客户端\n- 账号探针对纯 decisions provider 改用 systemone,不再报「不可探测」\n- `below_billing_step` 标记低于计费步长($1e-5)的正价模型——Jev 输入 $0.042/1M 时小于 ~119 token 的请求四舍五入为 $0,报表与模型页会说明这是舍入而非免费\n- 用量事件暴露上游状态码与错误体,模型维度报表同样标注\n\n### 其他\n\n- ai-protocol v0.4.2:Responses 流生命周期修复,Codex 工具调用在折叠中存活\n- Codex 桌面端登录直达工作台;schema 推进到 migration 105\n- 配套插件:`typesafe`(声明式)与 `agentjev`(Wasm)已发布到插件市场,均要求 >= 0.20.0\n"
+}

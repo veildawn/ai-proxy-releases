@@ -524,6 +524,7 @@ jobs:
 
       - name: Commit and push tap
         working-directory: tap
+        continue-on-error: true
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |

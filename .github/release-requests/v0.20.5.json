@@ -1,0 +1,6 @@
+{
+  "version": "v0.20.5",
+  "source_ref": "v0.20.5",
+  "since_sha": "6931d431ef70f0c72939a3fcf0e99ee8f1445f91",
+  "changelog": "更新\n\n· Codex 桌面安装文件补丁只在 macOS/Linux 上执行。Windows 不再改 app.asar 或 resources/app，商店包与便携包都不会被原位修补。\n· Windows 上的桌面配置功能保留：登录、切换、模型刷新仍会写入 ~/.codex 的桌面登录与运行配置；撤销时配置回滚不因没有安装文件可恢复而失败。\n· macOS 上若 Info.plist 声明 ElectronAsarIntegrity，补丁会被拒绝而不是改坏归档；已签名的 .app 会提示重签命令。\n"
+}

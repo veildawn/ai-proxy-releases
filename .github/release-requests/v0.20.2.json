@@ -1,0 +1,6 @@
+{
+  "version": "v0.20.2",
+  "source_ref": "v0.20.2",
+  "since_sha": "94cefedd36f2ef2206d19691864803c4d3bf0d1b",
+  "changelog": "### 新增\n\n- **桌面补丁支持官方打包布局：** 新版桌面端（官方 Linux 包）把应用代码打进 `resources/app.asar`，没有散装的 `resources/app` 目录，`patch-desktop` 以前找不到目标（报 `resources/app was not found`），Max 档位也就无从解锁。现在新增 asar 归档读/写实现，可直接在归档内打补丁与撤销：重写走临时文件 + rename，被改文件重算 SHA256 与分块校验值，`unpacked` 条目和其它字段原样保留；探测路径补上 `/usr/lib/chatgpt`、`/opt/ChatGPT`、`ChatGPT.app` 及 Windows 对应目录。\n\n### 改进与修复\n\n- **补丁改为「追加」而不是替换档位列表：** 新版默认档位多了一个 `persistent`，替换式补丁会把它抹掉；现在按「设置说明 + `enabled-reasoning-efforts` 键」定位，只补上缺失的 `max`，新旧版本都不会丢档位。\n- **备份更省空间：** asar 布局只保存被改文件原始字节的 gzip（实测 2.7 MB），不再复制整个 366 MB 归档；`--unpatch` 实测把归档还原到与原始文件完全一致的 sha256。\n- 补丁/撤销的输出会区分「散装目录」与「归档内」，权限不足时给出具体目录与处置建议。\n- 一并发布：Codex 适配 `gpt-6-sol` / `gpt-6-luna` 模型及模型注册表依赖更新；插件市场同步 tokenhub 1.2.0 与发布者密钥。\n"
+}

@@ -1,0 +1,6 @@
+{
+  "version": "v0.20.6",
+  "source_ref": "v0.20.6",
+  "since_sha": "4f3f5dbc8ef64c45f11881b929a18ad2a9e459c46",
+  "changelog": "更新\n\n· 供应商异常归类收尾：401 分支与「流中断」路径现在也尊重插件声明的健康类——插件点名的「不是账号的错」（model_unavailable / content_filter）一律不冷却账号、不切账号，错误原文直给客户端。\n· 模型额度耗尽自动跳过：插件点名 model_unavailable 时，网关按既有 TTL 负缓存「账号+模型」，该模型暂停尝试一段时间；同一账号的免费/其它模型不受影响。\n· 新增观测指标 aiproxy_attempt_exceptions_total{provider, condition}：「上游拒绝但不算账号故障」的例外从此可计数、可告警，不再隐身。\n"
+}

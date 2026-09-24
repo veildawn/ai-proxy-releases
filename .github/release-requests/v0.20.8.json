@@ -1,0 +1,6 @@
+{
+  "version": "v0.20.8",
+  "source_ref": "v0.20.8",
+  "since_sha": "bb42fc8770d4ad4f0e863023f570577a46225550",
+  "changelog": "更新\n\n· 生图路由准入修正：插件 adapter 的端点清单只约束它自己方言的端点。images/generations 与 images/edits 是 openai 方言的拼写，responses 臂的词汇表写不下，此前这份沉默被当成拒绝——Codex 订阅账号的每个生图请求都在网关被 400（unsupported combination）。现在这类请求由 Responses 族的生图行承接，模块照常收到 images/generations，直连生图、图片编辑与 chat 折叠生图三条路径一并恢复。\n· xai、商汤、Antigravity 三个插件同步声明 images 路由（1.5.2 / 1.5.2 / 1.6.15，仅清单变更，模块字节不变）：它们的生图请求从此走各自的 openai 臂，也就是图像请求本该落的那条臂。\n"
+}

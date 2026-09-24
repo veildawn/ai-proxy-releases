@@ -1,0 +1,6 @@
+{
+  "version": "v0.20.7",
+  "source_ref": "v0.20.7",
+  "since_sha": "84c8f86f082c136f3138cdc1b9738c225280593e",
+  "changelog": "更新\n\n· 修复 Codex 生图报 400 unsupported combination：端点声明检查不再把 images/generations、images/edits 当成「未声明」拒掉——这两个端点名只属于 openai 臂的词表，只有 responses 臂的供应商写不下，改由 provider 级 images_vocabulary 授予准入。直连生图、图片编辑与 chat 折叠生图三条路径一并恢复。\n· 声明过生图词汇的供应商（xai、SenseNova 等）同步恢复；没有声明生图路由的第三方 Responses 网关仍按原样 400，臂内已声明端点的边界不变（openai 臂只声明 chat/completions 时依旧拒绝 images）。\n"
+}

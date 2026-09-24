@@ -1,0 +1,6 @@
+{
+  "version": "v0.20.11",
+  "source_ref": "e38feb8397d7099c66bdea6be8e0ade4b7adea03",
+  "since_sha": "5c83afd26ee20eea4fe6eb8f93d8e55301743a34",
+  "changelog": "修复\n\n· 修掉「客户端拿到完整回答、网关却记 502 并冷却账号」的根因：流式转换的终止帧观察改为跨读取解析 SSE。终止帧是整条响应里最大的事件，超过缓冲分片时会被截成两半，此前会被误判为「upstream stream truncated before terminal frame」——gpt-6-sol 走 chat 端点时最常踩到，判定还取决于 socket 如何切字节，因此表现为随机失败。\n· 真截断仍按失败结算，并把错误帧交给客户端，日志与客户端所见保持一致；response.incomplete 归为 length。\n· 依赖 ai-protocol v0.4.4；新增两层回归：协议层（同一条完整流按任意分片解析都必须判定为正常结束、真截断仍判失败）与网关层（上游按 7 字节分片时必须结算成功且不出错误帧）。\n· Go 测试与构建全部通过。\n"
+}

@@ -1,0 +1,6 @@
+{
+  "version": "v0.20.12",
+  "source_ref": "124e97b85f29ae166ae5325538ca45ac151dd1e6",
+  "since_sha": "e38feb8397d7099c66bdea6be8e0ade4b7adea03",
+  "changelog": "修复\n\n· 修掉「插件升级装不上新声明的 adapter 臂」的根因：provider.Adapter 没有 JSON tag，落库、返回面板、冻结进 revision 时用的是 Go 字段名（Public/Endpoints），而插件清单与合并台账用的是 wire 拼写（public/endpoints）。插件升级走三方合并并按 JSON 比对两侧，于是每一行都永远被读成「运维手改过」：旧 adapters 被保留，新清单声明的 adapters 落不下去。\n· 这一条正是 OpenCode Go 1.2.3 无法更新的原因：它新增了 Anthropic 臂，protocols 变成三条而行里还是两条，校验直接以 protocols declares \"anthropic\" without an adapter 拒绝整次升级。修复后已装 1.2.2 的实例可以正常升到 1.2.3，行内 adapters 补齐 openai/anthropic/responses 三条臂。\n· 同一个拼写问题还让面板收到的 adapters 是 Public/Endpoints，前端按 a.public / a.losses 读取时拿到空值；现在两侧统一为 wire 拼写，面板能正确显示每个协议覆盖的 endpoint 与损失项。历史行仍能读回（JSON 字段名匹配不区分大小写），会在下一次应用时自动改写，无需数据迁移。\n· provider revision 的内容哈希会因为拼写规范化变化一次，新建一条不可变 revision 后固定；账号、凭据与已配数据不受影响。\n· 新增两条回归：升级补臂必须落到 provider 行上（去掉修复即失败），以及清单侧与行侧必须共用同一种拼写；go test ./internal/... 全绿，go vet / gofmt 干净，插件市场发版门禁通过。\n"
+}

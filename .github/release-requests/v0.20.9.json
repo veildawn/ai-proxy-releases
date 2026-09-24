@@ -1,0 +1,6 @@
+{
+  "version": "v0.20.9",
+  "source_ref": "v0.20.9",
+  "since_sha": "e56ba89659dd5b8c503b24023331e56ec7faf927",
+  "changelog": "更新\n\n· 修复插件字段 images_vocabulary 从未落库：provider 定义校验此前不拷贝该字段，任何部署的行都只有列默认空值，插件升级也补不回来（该字段同时不在插件托管字段表里）。现在校验会按闭集校验（openai_full，空即 portable）并写入行，清单升级能真正生效，chat 折叠生图与面板图标生成会按厂商声明的参数组拼包。\n· 导出的 provider 清单不再丢字段：images_vocabulary、supports_realtime、thinking_in_model_id 现在随导出一起往返，重新导入不会再悄悄改变行为。\n"
+}

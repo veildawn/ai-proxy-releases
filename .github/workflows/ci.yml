@@ -78,6 +78,14 @@ jobs:
       - name: go vet
         run: go vet ./...
 
+      # The e2e suite is behind //go:build e2e, so the plain vet above never
+      # loads it and a package that stopped compiling would stay invisible
+      # until someone ran `make e2e` on a machine with upstream keys. The
+      # tagged vet type-checks it with no keys, no postgres and no upstream
+      # call - the cases themselves stay out of CI, their compilability does not.
+      - name: go vet (e2e build tag)
+        run: go vet -tags e2e ./tests/e2e/...
+
       # v9 runs on Node 24 (v6 is Node 20, deprecated on runners). Pin golangci-lint
       # v2.x: action v6's "latest" still resolved to v1.64.8, which is built with
       # Go 1.24 and refuses to load a go 1.27 module (exit code 3).

@@ -1,0 +1,6 @@
+{
+  "version": "v0.20.14",
+  "source_ref": "a329350ffbfcd9c985470218a4e3d1690f12760b",
+  "since_sha": "2851e41d282e03a963592ab7a6940305205ca381",
+  "changelog": "更新\n\n· 嵌入模型仓库快照由 8f2eb3f 推进到 03351b1e：新增与修正的模型、价格、上下文窗口和思考等级随二进制一起发布，全新安装与验签失败回退时立刻可用，不必等运行时同步；all.json 与 all.json.sig 已一并重新生成并签名。\n· Codex 新增 gpt-6.1-sol：922K 上下文窗口、128K 输出上限，走 chat 端点，思考等级覆盖 low/medium/high/xhigh/max；计费按每百万 token 提示 $2 / 补全 $10，缓存读 $0.1、缓存写 $2.5。\n· 新增火山方舟 provider 清单 providers/ark.json，带入 doubao-seed-2.0-lite、doubao-seed-2.0-mini、doubao-seed-2.1-lite、doubao-seed-2.1-pro、doubao-seed-2.1-turbo、doubao-seed-evolving 共六个豆包模型。\n· Anthropic 新增 claude-sonnet-5-5，Bedrock 同步补齐 global、us、eu、apac、au、jp 六个区域的对应条目。\n· TokenHub 按企业版 Token Plan 更新补入 deepseek-v4.1-flash；OpenCode Go 补入 longcat-2.5-preview-free。\n· 修正 Gemini deep-research-pro-preview-12-2025 的模型事实：上下文窗口 65,536 提升到 1,048,576，输出上限 32,768 提升到 65,536，输入模态补上 audio 与 video，surface 从 image 改为 chat。\n· 通义千问 qwen3.8-omni-flash 补上思考等级 none/low/medium/xhigh。\n"
+}

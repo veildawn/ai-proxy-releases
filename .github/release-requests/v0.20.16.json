@@ -1,0 +1,6 @@
+{
+  "version": "v0.20.16",
+  "source_ref": "4eebacc4f5aca84c8946c4e4ed1bd08c3dae0130",
+  "since_sha": "2eb45424107b570149cc1d52250e8e31e8ce9df0",
+  "changelog": "更新\n\n· 协议库升级至 ai-protocol v0.4.7：加入增量 SSE 分帧和事件语义事实，将 bootstrap 提交闸门改为依据真实内容、推理、完成、失败和未知事件判断，避免元数据或错误帧误触发提交。\n· 增加 CacheAffinity 分级等待策略（legacy/shadow/enforce）；默认保持兼容，enforce 仅在连续三次权威 cache miss 且存在可用备用账号时缩短额外等待，并对缓存证据做隔离、版本校验、TTL 和容量限制。\n· 完善决策 trace、运行时配置和管理界面，记录等待及提交原因。\n· gofmt、go vet（含 e2e 构建标签）、全量 go test、race、前端 typecheck/lint/test/build、配置校验及本地市场发布门禁通过；GitHub CI 对该 source SHA 全部通过。\n"
+}

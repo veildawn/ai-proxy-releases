@@ -1,0 +1,6 @@
+{
+  "version": "v0.20.15",
+  "source_ref": "2eb45424107b570149cc1d52250e8e31e8ce9df0",
+  "since_sha": "a329350ffbfcd9c985470218a4e3d1690f12760b",
+  "changelog": "更新\n\n· 升级协议转换库 ai-protocol 至 v0.4.6。修复 Responses 转 chat 时 reasoning_effort 被整对象发给上游的问题：客户端在 reasoning 里同时设置 summary（pi-ai 总是这么做）时，此前整个 reasoning 对象会作为 reasoning_effort 上行，OpenRouter 直接回「Invalid option」，网关自己的 effort 读回也拿不到字符串；现在只折叠 effort 标量，summary 等在 chat 线上无对应的字段自然丢弃。\n· gofmt / go vet（含 e2e 构建标签）/ 全量 go test -race 在本地全部通过。\n"
+}

@@ -1,0 +1,6 @@
+{
+  "version": "v0.20.17",
+  "source_ref": "c19a5572f701081ab0d6aaf08c6a457a39dd1aac",
+  "since_sha": "4eebacc4f5aca84c8946c4e4ed1bd08c3dae0130",
+  "changelog": "更新\n\n· 修复 WorkBuddy 国际等\"只会流式\"上游在非流式客户端下的 502：插件强制 stream:true 后，网关缓冲路径把 SSE 当 JSON 解析，死在开头的 `: heartbeat` 注释上（protocol response: invalid character ':'）。现在先把事件流折叠成单个 chat.completion 再走用量提取与响应转换，Claude Code 的 auto mode 安全分类器（非流式调用）不再报 \"temporarily unavailable (server error)\"，计费也改用上游自己的 usage 帧。\n· 接线 Messages 请求清洁逻辑：Claude Code 的 x-anthropic-billing-header 归因行不再穿透到 Chat/Responses 线上（避免破坏前缀缓存、并触发 WorkBuddy 国际 11128 拒绝），Anthropic 工具 schema 折叠时补 type:object、去 format:uri。同方言透传不变，行中引用的 header 视为用户内容保留。\n· 内嵌模型仓库快照升级至 e0c0e25（mimo 模型/费率自动同步）。\n· gofmt、go vet、全量 go test、前端 typecheck/lint/test/build、make verify 本地通过。\n"
+}

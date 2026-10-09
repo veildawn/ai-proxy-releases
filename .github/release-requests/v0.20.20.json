@@ -1,0 +1,6 @@
+{
+  "version": "v0.20.20",
+  "source_ref": "c7a7c7e01229d3fb8e2311c30a05be5c3ce40791",
+  "since_sha": "42d5be8375eb36c495e9ce40bfb15cba09419117",
+  "changelog": "更新\n\n· Claude Code 面板升级为控制中心：接入说明区分终端 CLI、Claude Desktop Code 与 SSH/WSL，并新增路由模拟器、思考等级能力展示、兼容性提示和最近活动统计。\n· 新增 Claude Code 路由档案：可为不同场景维护多套 family/custom 模型路由，并支持复制、设为默认、删除与 API Key 绑定；旧配置会自动迁移到 default 档案。\n· 修正 Claude Code 思考等级选择：按目标模型实际 effort ladder 生成虚拟模型与能力声明，Haiku 支持思考时改用 claude-haiku-5-5；不支持的等级不再出现在客户端，越界请求会在网关明确拒绝。\n· 新增 capability patch：family 别名只写入虚拟 Claude 模型，自定义模型用 behavesAs 声明能力；服务端修改路由仍可下一个请求生效。\n· 模型发现响应补充 family tier、1M 标记和描述，接入探测改用 Bearer 认证并增加 count_tokens 检查。\n"
+}

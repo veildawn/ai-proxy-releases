@@ -1,0 +1,6 @@
+{
+  "version": "v0.20.22",
+  "source_ref": "850d6ce19b616921d5f45e5e0c2ae369b0486e10",
+  "since_sha": "3a7f0359a168656e753bacd6f76358cc526b9fb0",
+  "changelog": "更新\n\n· 优化 Claude Code 模型发现与能力声明：\n  - 模型发现列表去重，合并同目标模型与冗余的 [1m] 孪生条目，每个物理模型只展示单一条目；\n  - 统一通过 supports_1m 声明 1M 上下文窗口能力，客户端请求 1M 变体时自动附加 context-1m beta 协议头；\n  - 重构 buildClaudeCodeModelData 生成逻辑，支持解耦测试。\n· 升级 API 密钥管理体验：\n  - 密钥管理页新增实时搜索、状态多维筛选（全部/启用/禁用/独立限额）与指标概览栏；\n  - 新建密钥时提供明确的完整密钥复制弹窗与安全提醒；\n  - 密钥列表支持明文查看/掩码随时切换与一键复制；\n  - 增加快捷接入 Base URL 参考卡片与一键跳转 Playground 测试。\n· 优化 Claude Code 档案创建与克隆的状态流转与交互响应。\n"
+}

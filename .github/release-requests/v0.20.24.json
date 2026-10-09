@@ -1,0 +1,6 @@
+{
+  "version": "v0.20.24",
+  "source_ref": "a882b7d5b27aa4457865da1bda825faa629e3f1f",
+  "since_sha": "2d7bb5a7fac0bca4cfa217535193682e35ed80fb",
+  "changelog": "更新\n\n· Claude Code 请求的思考等级如果高于目标实际支持的最高档，会自动降到目标能提供的最高档，不再返回 400。只改等级字段，不重编码请求体，避免大整数丢精度。\n· Claude 协议折叠到 Chat / Responses 时，system 角色写成上游接受的 developer，避免 gpt-6.1-sol 等新模型拒绝 System messages are not allowed。\n· 依赖 ai-protocol v0.4.9：被长度或内容策略截断的响应按 incomplete 报告，不再伪装成正常完成。\n"
+}

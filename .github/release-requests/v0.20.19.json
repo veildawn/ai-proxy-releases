@@ -1,0 +1,6 @@
+{
+  "version": "v0.20.19",
+  "source_ref": "42d5be8375eb36c495e9ce40bfb15cba09419117",
+  "since_sha": "b34a86091742d773297843242ab66b10ab518c71",
+  "changelog": "更新\n\n· 修复新代 Claude（Haiku 5.5 等）开启思考时的 400：这些模型已移除显式预算的 thinking 块，对旧的 {\\\"type\\\":\\\"enabled\\\",\\\"budget_tokens\\\":N} 形状回「\\\"thinking.type.enabled\\\" is not supported for this model. Use \\\"thinking.type.adaptive\\\" and \\\"output_config.effort\\\"」。折叠（Responses→Messages）与网关自身的默认参数填充都会写出这个旧形状，因此每一轮带思考的请求都会 400。此前修掉 summary 泄漏并未覆盖它：上游一次只报一条校验错误，修掉一条才暴露下一条。\n· 旧代模型（≤4.5）仍要求 budget_tokens 且拒绝 adaptive，形状无法凭模型 id 事先判定，因此这是继「思考顺序」与「思考预算」之后的第三条按证据降级阶梯：识别该 400 后把 body 改写为 adaptive，并把原预算对应的深度搬到 output_config.effort（minimal 预算折到 low，现代枚举中最低的档位），就地重试一次，并按账号+模型记忆，后续轮次直接以 adaptive 起步。\n· gofmt、go vet、全量 go test 本地通过。\n"
+}

@@ -1,0 +1,6 @@
+{
+  "version": "v0.20.18",
+  "source_ref": "b34a86091742d773297843242ab66b10ab518c71",
+  "since_sha": "c19a5572f701081ab0d6aaf08c6a457a39dd1aac",
+  "changelog": "更新\n\n· 修复 Responses 客户端请求被桥接到 Anthropic（Messages）上游时的 400：协议库（ai-protocol v0.4.8）在把 Responses 的 reasoning 折叠成 Messages 的 thinking 时，把仅 Responses 才有的 reasoning.summary 一并写了进去，而上游的 thinking 对象只接受 type 与 budget_tokens，于是回「thinking.enabled.summary: Extra inputs are not permitted」。现在只输出 type + budget_tokens，summary 在 Messages 线上无对应字段，自然丢弃。\n· 触发场景：OpenCode Go 的 claude-haiku-5-5 自 1.3.0 起被钉到 anthropic 臂（/v1/messages），Responses 客户端的一轮请求改由本折叠桥接，不再走 /v1/responses，这条既有的转换缺陷因此变得可达。\n· 内嵌模型仓库快照升级至 fb5e71f（anthropic 模型/费率自动同步）。\n· gofmt、go vet、全量 go test 本地通过。\n"
+}

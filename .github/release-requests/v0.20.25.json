@@ -1,0 +1,6 @@
+{
+  "version": "v0.20.25",
+  "source_ref": "1578b46cb66db31d86d9e8892a9221d34c7e99ad",
+  "since_sha": "a882b7d5b27aa4457865da1bda825faa629e3f1f",
+  "changelog": "更新\n\n· 依赖升级至 ai-protocol v0.4.10：修复 Responses 协议客户端在多轮思考与工具调用回放时折叠出多个独立 assistant 消息的缺陷，保证思考过程与工具调用紧邻挂载于同一条消息，彻底解决 DeepSeek 等严格上游的 400（11133/11155）报错。\n· 同步升级插件市场 workbuddy / workbuddy-intl 至 1.1.12、tokenhub 至 1.2.3。\n"
+}

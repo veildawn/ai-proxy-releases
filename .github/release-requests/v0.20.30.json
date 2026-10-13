@@ -1,0 +1,6 @@
+{
+  "version": "v0.20.30",
+  "source_ref": "a76118f4494b8f1ea9429e1506d691d8a9a90191",
+  "since_sha": "cc6f02718eeec7f5863aafedb9a44d176ad1a97e",
+  "changelog": "更新\n\n· 升级协议库至 ai-protocol v0.5.1、模型注册库至 v1.1.0：chat 请求携带 response_format（json_schema / json_object）时不再整路拒绝，可正常转入 Anthropic Messages（json_schema 会编译为其 output_format）。\n· 部分厂商的聊天流以 usage 尾帧收尾（EOF、无 [DONE]）不再被误判为空流：不再换号重跑已计费的生成，健康账号也不会被误冷却。\n· 清理协议迁移遗留死代码约 610 行（折叠残壳、恒等钳制、带内错误重扫描绕圈、只写不读字段等），带内失败路径少一次 JSON 重解析。\n· Claude 短别名与日期 id 对照表移交模型注册库统一发布。\n"
+}

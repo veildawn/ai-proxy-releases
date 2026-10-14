@@ -1,0 +1,5 @@
+{
+  "version": "v0.21.5",
+  "source_ref": "9fc6989fc32ebd338d1441a4c3cd714192dd33f6",
+  "changelog": "更新\n\n· 修复同一响应里既调工具又输出文本时 Responses 客户端丢 output_text 的问题（协议库升级 ai-protocol v0.6.6）：此前工具调用先到会烧掉唯一的输出项声明，文本增量指向一个从未声明过的输出项，遵守协议的客户端（Codex、OpenAI SDK）直接丢弃这些增量——模型文本静默丢失而 token 照常计费；现在每个输出项在开启时立即声明，增量与聚合内容完整送达，completed 聚合数组按 output_index 排序。\n· 修复 gemini 上游同帧丢工具调用：functionCall 与文本或 finishReason 同帧到达时整个调用被丢弃（gemini 结束工具轮的常见帧型），同一帧携带的内容现在全部保留；首帧开启输出项时自身的增量也不再被吞。\n· 修复推理（thinking）先于文本出现的轮次丢文本的同类问题：文本 item 现在开启即声明，不再隐身搭载在推理项的槽位上。\n"
+}

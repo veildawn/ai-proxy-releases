@@ -1,0 +1,6 @@
+{
+  "version": "v0.21.1",
+  "source_ref": "3f332a483e6f9d38c2f677508dc7821200eb4dba",
+  "since_sha": "f0f6ef0321b0b45e56b41c47a0dfb5d608e03da1",
+  "changelog": "更新\n\n· 修复 Anthropic Messages 客户端的多轮工具循环（协议库升级 ai-protocol v0.6.1）：折叠重建的 thinking 块此前不带签名，客户端回放时会把思考降级成文本块，恰好落在 tool_use 之间被上游 400 拒绝——任何带思考的代理任务第二轮必断；现以明确标注的替身签名签出，thinking 回放保持 thinking。\n· 修复 Messages→Responses 折叠的助手轮顺序：文本此前垫在 function_call 之后，上游把「调用与结果之间插了助手文本」当作交错违规直接 400；现按 reasoning → message → calls 折叠（与 chat 方向一致），工具循环完整可走。\n· CommandCode 插件 0.5.1：无 tools 声明的请求里，推理模型写进文本通道的原生工具调用标记不再原样透传（此前表现为 200 + end_turn 的静默空交付），流式按帧、整包按体剥离；带工具声明的请求字节不动。\n"
+}

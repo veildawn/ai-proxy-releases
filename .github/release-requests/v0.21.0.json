@@ -1,0 +1,6 @@
+{
+  "version": "v0.21.0",
+  "source_ref": "f0f6ef0321b0b45e56b41c47a0dfb5d608e03da1",
+  "since_sha": "a76118f4494b8f1ea9429e1506d691d8a9a90191",
+  "changelog": "更新\n\n· 新增 Gemini 原生协议：把 Gemini SDK 的 base 指到网关 /v1beta 即可直接调用（generateContent / streamGenerateContent / countTokens / 模型列表），x-goog-api-key、?key=、Bearer 鉴权都认；gemini 上游请求与响应字节原样直通，官方 SDK 常见的 camelCase 与 snake_case 拼写都支持。\n· 四方言全桥接（协议库升级 ai-protocol v0.6.0）：openai / anthropic / responses / gemini 任意客户端方言可访问任意上游协议，转换自动完成；文本客户端的 logprobs、多候选（n>1）、stop 等在 gemini 方向同样保留，URL 文档也能过。\n· 插件与管理面：插件 manifest、管理 API、前端表单均可声明 gemini 端点；模型拉取与账户轮询读懂 Google 响应形状。\n· 跨协议折叠保持用户数据原样：工具 schema 属性名、函数参数、labels 一概不动；gemini 客户端的模型名自动从 URL 注入，流式动词自动折换成目标协议的 stream 字段。\n· 配置 gemini 协议上游时 base 需带版本段（如 https://generativelanguage.googleapis.com/v1beta），裸域会在推理路径拼出 /v1 导致 404。\n"
+}

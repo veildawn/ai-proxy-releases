@@ -1,0 +1,6 @@
+{
+  "version": "v0.23.1",
+  "source_ref": "cb1e2d1211b0d0980550ff1e71d2b7fb2a61a8c1",
+  "since_sha": "4f73d9efc52c7cc0ae0009da95fbdbdfb8c99e86",
+  "changelog": "更新\n\n· 修复 gemini 通道多轮工具循环第二轮必断的问题（协议库升级 ai-protocol v0.8.2）：往 gemini 方向的回放折叠此前在客户端没有保留签名时不写 thoughtSignature，而拿到裸 call_id 的客户端恰恰什么都没有，第二轮请求被上游以 400 INVALID_ARGUMENT 拒绝；Messages 方向的同类问题已在 v0.6.5 修复，v0.8.1 把这套兜底标记带到 chat 与 responses 折叠，v0.8.2 补上另一半——上游把 thoughtSignature 成员 camelCase 与 snake_case 两种拼写都认，三个折叠包里的七个读取方却只读 camelCase，snake_case 签名被丢一半，下一次请求拿到的就是未签名的调用。\n· 修复上述漏读导致的静默质量损失：签名原本随客户端回放的 call id 同行抵达，丢读后 v0.8.1 的标记悄悄兜住，轮次仍旧合法，但模型自己签过的那段推理被抹掉；现在回应折叠从部件上任一拼写中取回签名，交给客户端的 call_id 后缀正是下一次请求读回来的那个。\n· 无网关行为变更：折叠与其装配未动，新增两个翻译层测试钉住协议这一侧的两半契约。\n"
+}

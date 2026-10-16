@@ -1,0 +1,6 @@
+{
+  "version": "v0.23.3",
+  "source_ref": "e638784b7dcab7681087f329b9a26ed7984d7988",
+  "since_sha": "81b8ddd23c887a0a32b7f94f5c2b569517ff1ee7",
+  "changelog": "更新\n\n· 修复 0.23.2 启动即崩溃导致整站 502：解耦重构把 InstallDiagnostics 挪进了 buildRuntime，而它读取的 App（含 Metrics 注册表）要到下一步 assemble 才创建，于是每次启动都在开始监听之前空指针 panic，systemd 重试 16 次后放弃、端口无人监听、nginx 对外 502。调用点移到 App 创建之后、任何 provider wasm 编译之前，启动顺序恢复；本地对 scratch 库实机启动验证通过（修复版正常监听，回退版在同一位点复现 panic）。\n"
+}

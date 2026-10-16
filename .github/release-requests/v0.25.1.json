@@ -1,0 +1,6 @@
+{
+  "version": "v0.25.1",
+  "source_ref": "d23734fbc",
+  "since_sha": "c97609064da3b9cee6770bdfcb8d8899a1878317",
+  "changelog": "更新\n\n· 修复集成升级一律报「内部错误」的问题（v0.25.0 回归）：迁移 110 给 custom_providers 新增的 variant_suffixes 列带 NOT NULL 约束，而插件升级走整行 Save、把未声明的空值写成了 NULL，事务整体回滚——凡 manifest 未声明变体后缀规则的插件（绝大多数）升级必在 resources 步骤失败。2026-10-16 线上 antigravity 1.8.0→1.8.1 两连败（任务 2ad0c8d2）即此因。现在空定义与 request_overrides、model_protocols 一样显式写成空文档，安装与升级均不受影响；新增以真实发布 manifest 走安装→升级全链路的回归测试。\n· 安装/升级失败时把底层错误写入应用日志：此前 installation 行只存脱敏后的安全文案，internal 类失败的真实原因无处可查，本次只能本地复现才定位到根因；失败原因现在可在面板应用日志（plugins 模块）直接看到。\n"
+}

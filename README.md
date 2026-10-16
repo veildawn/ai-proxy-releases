@@ -147,3 +147,29 @@ Every release ships a `checksums.txt` (the installer checks it for you):
 gh release download --repo veildawn/ai-proxy-releases -p 'checksums.txt' -p '*.tar.gz'
 sha256sum -c checksums.txt --ignore-missing
 ```
+
+## Cutting a release (maintainers)
+
+Releases are cut by pushing a JSON request file — no manual workflow dispatch needed. The Release Request workflow relays into the Release workflow, which builds the five-platform archives, the multi-arch ghcr image, `checksums.txt`, and bumps the Homebrew tap:
+
+```sh
+cd .github/release-requests
+cat > v0.26.0.json <<'JSON'
+{
+  "version": "v0.26.0",
+  "source_ref": "<full 40-char SHA of the commit to build>",
+  "since_sha": "<SHA of the previously released commit>",
+  "changelog": "更新\n\n· one bullet per change, plain text"
+}
+JSON
+git add v0.26.0.json && git commit -m "release: request v0.26.0 (short summary)" && git push
+gh run watch <run-id>
+```
+
+Three rules the request parser will not forgive:
+
+- **`source_ref` must be the FULL 40-character SHA.** The workflow `git fetch`es this exact ref, and fetch rejects short SHAs with `couldn't find remote ref <sha>` — the whole run dies in `prepare` after a few seconds. A branch name or a tag also works; a short SHA does not (2026-10-16: a v0.25.1 request died exactly this way).
+- `since_sha` is what makes `should_release` refuse a no-op (source_ref resolving to the already-released commit), and what auto-fills the changelog from commit subjects when `changelog` is omitted.
+- The `changelog` is plain text rendered verbatim in the admin panel's update dialog: start with `更新`, one `·` bullet per change, no markdown.
+
+Run the CI workflow against the same source ref first (`gh workflow run ci.yml -f source_ref=<sha>`) — nothing else tests it before the release builds.

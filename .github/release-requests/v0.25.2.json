@@ -1,0 +1,6 @@
+{
+  "version": "v0.25.2",
+  "source_ref": "a2ab5ff67b778d2a97b3599f8c80b38ac1c6165a",
+  "since_sha": "d23734fbc5f4ceed6cf4a910db31d47f73ee6516",
+  "changelog": "更新\n\n· 修复推理模型偶发死循环导致 65.54K token 耗尽并被上游强制截断的问题：在流式网关响应中新增推理内容重复检测机制（detectReasoningRepetition），实时监控 reasoning_content / thinking 流式增量。当检测到连续 4 轮以上的重复循环语句时，立即触发 errStreamRepetition 熔断并归类为 streamEndedGuarded，向客户端发送规范的终端错误帧，避免上游空耗数分钟并触碰 65k 上限截断。\n· 新增路由规划层输出 token 上限钳制（clampOutputCeiling）：当模型在注册表中有明确声明的 output_ceiling 时，自动对客户端盲目透传的超大 max_tokens、max_output_tokens、max_completion_tokens 钳制到真实上限以内，防止请求向模型传递失控输出预算。\n"
+}

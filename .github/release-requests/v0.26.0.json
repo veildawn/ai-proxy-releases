@@ -1,0 +1,6 @@
+{
+  "version": "v0.26.0",
+  "source_ref": "fa5e91beb4a0a65f920f9e74d34cf93596465bda",
+  "since_sha": "fec8f60ffcb583ac72792f3a29a6a521c45fe6c4",
+  "changelog": "更新\n\n· 插件动作页契约扩展：row.description（标题列内换行的说明）、row.toggle（行内开关）、page.sections（段落块）与 stat_columns: 5，让插件在一张表里交付完整任务界面。\n· 新增账号级定时任务（scheduled_action + provides.schedule）：插件可在 manifest 中声明定时钩子，网关按账号独立调度（30 秒扫描、CAS 领取、6 分钟起指数退避、1 小时封顶、每键保留 50 条运行记录），插件不再需要借配额轮询做每日签到。\n· 新增账号级插件设置（provides.account.settings）：布尔/文本开关按（插件，账号）存储在新表 plugin_account_settings，与包级 plugin_settings 分离，避免把开关塞进会随令牌轮换的凭证。\n· 管理端新增四个接口：读取/写入账号插件设置、查看与手动触发账号定时任务，并在权限模型中补充 accounts:plugin-settings:read/write 与 actions 规则。\n· 迁移 112 新增 plugin_account_settings、plugin_account_schedules、plugin_account_schedule_runs 三张表，并对所引用的 plugins / upstream_accounts 做存在性守卫，重放启动流程时不再因建表顺序失败。\n· 插件动作页弹窗加宽至 2xl/3xl，奖励列由 6rem 放宽到 7.5rem，新增行内开关、段标题与五行统计布局。\n· workbuddy 2.0.0 / workbuddy-intl 2.0.0 依赖本版本：provides.schedule 与 account.settings 是旧版严格解码器不认识的字段，插件已将 min_app_version 抬到 0.26.0。\n"
+}

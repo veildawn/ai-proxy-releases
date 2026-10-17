@@ -1,0 +1,6 @@
+{
+  "version": "v0.27.0",
+  "source_ref": "f4eae271dae759913a143bb0f6568b9ca528bddf",
+  "since_sha": "d2117c23af86ffda4798de1038fb2ec11ce673b7",
+  "changelog": "更新\n\n· 图标统一到单一来源：provider 的图标现在只认插件清单声明。清单里的 icon 在安装时写入 provider_icons，各列表接口以 data URL 随 provider 行下发（/admin/models、/admin/pricing、/user/models、/admin/quota、/admin/accounts 均带 icon_url）。前端那张 570 行的内置品牌表已删除——它曾让同一个 provider 在账号页显示真实 logo、在模型页显示猜出来的 logo。\n· 未声明图标的 provider 改为中性占位（首字母 + 淡色底），尺寸与圆角同真图一致，行不会跳动。这比借用一张没收到过的厂商 logo 更诚实。\n· 名称同样改为只认服务端 display_name，缺失时回落 slug；不再有客户端名称表。\n· 补全市场缺图：agentjev、ark、codex-siwc、gemini-app、typesafe 五个包现在都声明图标。ark 装三个 provider，顶层图标不会被借给多 provider 包，因此三个 provider 各带一张。\n· 修复 gemini-app 无法安装：它的 account 字段用了 key / help / type:\"secret\"（符合 schema），但网关只认 name / help_text / text|password|textarea|select，ParseManifest 遇未知字段直接拒绝，报 unknown field \"help\"。\n· 登录页保留一份静态厂商标记（public/brand/hero），仅用于入口页装饰，列表与选择器不再引用。\n· 模型目录随 ai-model-registry 更新，新增 475 个 Vercel AI Gateway 模型与价格。\n· 插件新增账号级设置写入与双页签任务列表。\n"
+}

@@ -1,0 +1,6 @@
+{
+  "version": "v0.26.1",
+  "source_ref": "d2117c23af86ffda4798de1038fb2ec11ce673b7",
+  "since_sha": "fa5e91beb4a0a65f920f9e74d34cf93596465bda",
+  "changelog": "更新\n\n· 协议转换增强：在 Responses → Gemini 原生协议转换层中，兼容 OpenAI 新规范中的 developer 角色，自动折叠进 Gemini 的 system_instruction，修复在 Codex 等客户端中使用 Gemini 模型时报「message role \"developer\" has no place on the target wire」的问题（升级依赖 ai-protocol 至 v0.8.5）。\n"
+}

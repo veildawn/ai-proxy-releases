@@ -1,0 +1,6 @@
+{
+  "version": "v0.25.3",
+  "source_ref": "fec8f60ffcb583ac72792f3a29a6a521c45fe6c4",
+  "since_sha": "a2ab5ff67b778d2a97b3599f8c80b38ac1c6165a",
+  "changelog": "更新\n\n· 新增 Vercel AI Gateway 集成插件（vercel@1.0.3）：支持基于 Vercel AI Gateway 的多供应商模型路由，自动查询余额与已用额度（poll_quota），并根据 Vercel 订阅套餐（Free / Pro）在 list_models 时自动筛选模型（216 个免费积分模型 / 474 个全量模型），对免费套餐受限模型在 403 触发时精确归类为 model_unavailable。\n· 原生适配决策模型端点：支持 TypeSafe Jev 协议（/v1/systemone，路由至 https://ai-gateway.vercel.sh/typesafe/v1/systemone）与 OpenAI 兼容决策协议（/v1/decisions，路由至 https://ai-gateway.vercel.sh/v1/decisions），并支持根据报文格式自适应双向分流。\n· 完善网关决策模态（modality.Decision）分类规则与模型注册表（ai-model-registry）表面映射，保证决策模型在多供应商池化与智能路由时不被误判或剔除。\n· 健全路由契约测试与端点词汇表防重复守卫（canonicalEndpointSegments），同步双语开发文档（doc.en.md / doc.zh-CN.md）。\n"
+}

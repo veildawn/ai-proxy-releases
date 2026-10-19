@@ -1,0 +1,6 @@
+{
+  "version": "v0.29.2",
+  "source_ref": "adab2258a180384492512283315f972d66709188",
+  "since_sha": "e4c41f569d3f5d012299996e34d98b03daecbaef",
+  "changelog": "更新\n\n· 修复插件定时任务从不执行的问题：账号级调度（provides.schedule，WorkBuddy 的「自动签到」「自动领取奖励」走的就是它）在同步账号时 JOIN 了一张并不存在的 providers 表，每次启动都报 42P01 而无人察觉；兜底路径又用 Scan(&raw []byte) 读 TEXT 列，报 converting driver.Value type string to a uint8。两条路径都失败，调度表始终为空，于是无论开关怎么点都不会跑。现在按 plugin_resources 解析账号归属，manifest 改为按结构体读取；同步失败不再静默，会在应用日志里留下原因。\n· 账号增删、插件安装或升级后会立即重排定时任务，不再需要重启进程才生效；manifest 中已删除的 hook 会随升级被停用，而不是继续对着模块喊一个不存在的方法。\n· 新增 5 个基于真实 PostgreSQL 的回归测试覆盖这条链路（此前 account_schedule.go 没有任何测试），两个缺陷均已验证：恢复旧代码即失败。"
+}

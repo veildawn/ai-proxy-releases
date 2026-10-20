@@ -1,0 +1,6 @@
+{
+  "version": "v0.29.8",
+  "source_ref": "32eed3fccd955f907400bf9126eab6281c821eb6",
+  "since_sha": "92447d1a7bb29bebe692bf9aa2f50163266298b2",
+  "changelog": "### 修复\n\n- **Responses 协议工具调用历史兼容**。多轮会话跨模型切换时（如 Gemini 切换至部分走 Responses 协议接入的模型），历史中的 `function_call` 与 `function_call_output` 会被严格的 MaaS 上游拦截报错（400 invalid_request_error: rejected by an internal MaaS component）。网关新增证据驱动的工具历史自愈修复：发生未归因的 400 时，自动将重放的工具项就地折叠为保留完整工具名、参数与结果文本的消息并单次重试，重试成功后按账号与模型记忆以平滑后续轮次，非 responses 端点严格不受影响。"
+}

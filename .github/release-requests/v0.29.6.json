@@ -1,0 +1,6 @@
+{
+  "version": "v0.29.6",
+  "source_ref": "v0.29.6",
+  "since_sha": "d00a3e4535b7edb73f9016e54d490e624587969f",
+  "changelog": "### 修复\n\n- **配额面板窗口名按面板语言渲染。** WorkBuddy 把两个积分池（套餐池 / 活动池）以机器名 `plan` / `bonus` 标注，面板语言表缺少这两个名字，中文界面直接显示英文 \"Plan\" / \"Bonus\"。现已接入既有的 winSubscription / winBonus 文案，中英文均随面板语言渲染。"
+}

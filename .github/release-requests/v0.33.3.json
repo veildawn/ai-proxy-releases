@@ -1,0 +1,6 @@
+{
+  "version": "v0.33.3",
+  "source_ref": "7d277c82cedb663ba20a8d65b4eb92810c5895a4",
+  "since_sha": "ebab837b880c16370ad62bd0cda627c238162486",
+  "changelog": "### 新增\n\n- **配额卡底部解耦为双层微架构与无障碍 Tooltip 交互。** 针对卡片底部「拉取于 3分钟前」与「最近使用 昨天」文案过于拥挤、容易在各列宽下截断成省略号的问题，将底部重构为业务属性层与数据遥测层：\n  - 第一层（业务属性）：`ClockIcon` + 最近使用相对时间（如 `最近使用 昨天` / `从未使用`）与套餐标签、免额度模型弹窗按钮、优先级徽章并列；\n  - 第二层（数据遥测）：`ArrowsClockwiseIcon` + 配额快照拉取时间，超过 30 分钟未同步时自动转为琥珀色告警高亮与 `WarningCircleIcon`。\n  - 采用 Radix UI `Tooltip` 全面替代原生延迟 `title` 属性，支持 Tab 键盘聚焦与即时悬停查看精确到秒的时间戳，符合 WCAG AA 标准。\n  - 移除了 60 秒后突发显示时间文案的规避逻辑，布局常态稳定无跳变。\n\n- **管理端新增「运行时资源」实时监控面板。** 访问 `/admin/runtime` 可实时查看数据面与控制面上存活的 wasm guest 实例数量、各自占用的线性内存、以及进程整体的 RSS 常驻内存。\n  - 支持自动读取并展示 cgroup / GOMEMLIMIT 部署内存上限与利用率分析（headroom）。\n  - 提供 provider 维度 `opened − closed` 会话差值与看门狗超时实例（runaway）告警，帮助运维人员秒级定位插件泄漏。\n  - 实时观测数据面 inflight 槽位与通道饱和度状态。\n\n### 文档\n\n- **新增 Wasm 内存泄漏排查手册（`docs/wasm-memory-leak-triage.md`）。** 提供标准排查步骤与 pprof `X-Management-Key` 取样指令。\n\n### 验证\n\n- 前端 109 个套件（1384 个测试用例）全绿；`typecheck` / `lint` / `gofmt` / `go vet` 零警告通过。\n"
+}

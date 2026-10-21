@@ -1,0 +1,6 @@
+{
+  "version": "v0.33.0",
+  "source_ref": "4d761057c02abb87818432e022a72e86d0ef7da2",
+  "since_sha": "6944cc3ceba7f8a9975324ae1e1fa735dbd88153",
+  "changelog": "### 新增\n\n- **WorkBuddy 的 6004 频率限制改为按模型冷却，不再冷却整个账号。** 上游的 body 里没有任何模型名，只有一句「usage exceeds frequency limit」和 reset 时间；网关现在让插件只声明「这是模型级限流」，模型身份取自本次请求实际发出去的 `resolvedModel`，冷却只落在 `(账号, 模型)` 这一对上。账号继续服务其他模型，其他账号继续服务该模型。\n\n- **重置时间取自上游自己的说法。** WorkBuddy 的 `reset at 2026-10-22 11:17:30 UTC+8` 被解析成 typed release（`release_at`），模型冷却到那一刻自动失效；没有 reset 时退到 15 秒的模型级阶梯，不再把账号 park 24 小时。`14001/14012/14013/14014/14018` 等真正的额度耗尽仍保持账号级 `quota` 语义。\n\n- **面板新增「部分冷却」。** 账号列表与配额卡的状态标签在存在未过期模型冷却时显示「部分冷却」，点击打开该账号的模型列表，逐项列出恢复倒计时、绝对恢复时间和上游原因；到期后标签自动消失。恢复、重新登录、重新导入或切回 active 都会清空模型冷却。\n\n- **决策追踪新增 `model_cooling` 文案**：被筛掉的账号会说明「这个模型在冷却，其他模型仍可服务」，而不是只报一个筛选器名字。\n\n### 数据库\n\n- 新增迁移 115：在 `upstream_accounts` 与 `account_observations` 上增加可空的 `model_cooldowns` 文本列（JSON map）。启动前按既有流程执行 `migrate` 即可。\n\n### 兼容性\n\n- 旧插件仍返回 `quota`，行为不变；新插件在旧网关上会安全降级为状态码默认行为（账号级冷却），不会安装失败。\n\n### 验证\n\n- `go test ./internal/...`、`make gate`（race + linux build + config validate）、前端 `typecheck` / `lint` / `test` / `build` 全部通过；新增的模型冷却、选择过滤、Admin 投影、恢复清理和 wireModel 分离均有回归测试。"
+}

@@ -1,0 +1,6 @@
+{
+  "version": "v0.33.6",
+  "source_ref": "039a5bde48f2cc3b696579f33d1a80a27a55e56d",
+  "since_sha": "6233b5ac92a460142cd15c03199f3cf25ce4b625",
+  "changelog": "### 修复\n\n- **模型目录页不再因为一张「空 provider 卡片」整页白屏。** 一个有活跃账号、但模型全被手删的 provider（线上是 qoder）仍然会得到一张卡，用来承载它的 suppression 列表——否则被删的模型没有任何入口能放回来。这张卡在后端是用 nil slice 拼出来的，JSON 序列化成 `\"models\": null` 而不是 `[]`；而面板在画第一行之前就要折叠这个数组（`byModel` 逐卡遍历行，套餐表单的模型选择器也一样），于是 `TypeError: models is not iterable` 在渲染期抛出、被根 ErrorBoundary 接管——接口全部 200、日志无错，面板却只剩「出错了！发生了意外错误。」，看起来像服务器故障。现在服务端把空卡片的 `models` 固定成 `[]`（「没有行」是这张卡的含义，不是字段的缺席），前端三处折叠也一并容忍 `null`，所以旧版本后端发来的载荷最多让一张卡是空的，不会带走整页。\n\n### 依赖\n\n- **ai-protocol v0.8.5 → v0.8.6。** 上游只修一件事：Gemini/Messages 折叠时，客户端重放一个带「折叠替身签名」的 thinking 块，现在按无签名的裸 thought part 折叠，而不是把替身当成真实签名发给上游被判非法——那会以「模型拒绝请求」的 400 出现在网关侧。没有 API 变更。\n\n### 验证\n\n- `make verify` 与 `make release-verify RELEASE_VERSION=0.33.6`（含实时插件市场依赖校验）通过：gofmt / vet / go test 全量、codex 工具测试、备份测试、前端 typecheck·lint·109 套件单测·构建·依赖审计、内嵌资源与后端构建。\n- 新增回归 `admin_catalog_empty_card_test.go`（空卡片必须序列化成 `\"models\":[]`）与两处「`models: null` 折叠为空组」的前端用例；三者在移除对应守卫后都会失败，前端两条复现的正是线上那条 `TypeError: models is not iterable`。\n"
+}

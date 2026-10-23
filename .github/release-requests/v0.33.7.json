@@ -1,0 +1,6 @@
+{
+  "version": "v0.33.7",
+  "source_ref": "d50d03a89",
+  "since_sha": "039a5bde48f2cc3b696579f33d1a80a27a55e56d",
+  "changelog": "### 修复\n\n- **免登录 OAuth 插件一键添加账户。** 声明 `flow: \"oauth\"` 但不导出 `auth_start` hook 的插件（如 opencode-free 1.0.6）此前在点击「添加账户」时返回 500 服务器内部错误；现在 `Start()` 检测到缺失 hook 后自动创建预授权会话并合成 `public` 凭证，首次 `Poll()` 走标准 `completeOAuth` 路径完成开户，无需浏览器跳转、无密钥输入。\n\n- **缓存写入计费只记一次**，带内失败封套被封存。\n\n- **数据库 token 计数器加宽**，UTF-8 不再从 rune 中间截断。\n\n- **额度过期快照按小时和天计数**，不再按分钟显示。\n\n- **模型切换台批量测试支持子集选择**，操作更 streamlined。\n\n### 验证\n\n- `go test ./...` 2468 个测试全部通过。\n- 新增 `TestKeylessOAuthFlowCompletesImmediately` 回归测试，覆盖免登录 OAuth 完整开户流程（manifest-only 集成 fixture，无需 wasm 模块）。"
+}

@@ -1,6 +1,6 @@
 {
   "version": "v0.33.12",
-  "source_ref": "464579b08",
+  "source_ref": "464579b08ccb0b6b9f0d18d453c93cc861fdf8bd",
   "since_sha": "211877dbfe79fb8419577068932ab17543b6068e",
   "changelog": "### 修复\n\n- **插件升级不再清空 `variant_suffixes`。** 该字段此前未纳入受管合并字段，已有 provider 行在升级 apply 时会从合并字段表重建定义，剥壳规则（如 devin）被静默抹成空列表；现与 `images_vocabulary` 同型接入三方合并，升级后完整保留。\n\n- **快照克隆恢复不可变语义。** `CloneDescriptor` 此前未深拷贝 `RequestOverrides`（map）与 `VariantSuffixes`（slice），LookupTable 快照与自定义行共享引用、可被原地修改穿透。\n\n- **元数据地址防护加固。** `rejectMetadataBaseURL` 的链路本地地址（169.254.x）检查此前可被 `http://2852039166` 等非点分 IP 编码绕过，现先规范化主机名再判定。\n\n- **系统提示词替换规则与 JSON 解码语义对齐。** 字节预筛此前在客户端转义 `<` `>` `&` 时会静默跳过规则。\n\n- **出口选择器与同主机判断的一致性修复**（`EgressID`/`EgressTerms` 空项处理、`SameHost` 端口与尾部点归一）、**规则截断改为 UTF-8 安全**，多字节文本不再产生乱码。\n\n- **额度面板紧凑视图**的窗口元信息文本不再与金额重叠。\n\n### 重构\n\n- 全量评审了 v0.33.10 以来的全部改动（29 个经独立复核确认的问题），删除死代码与重复逻辑（`CountsTokensUpstream`、重复的费率拷贝/JSON 列解析/协议与路由前缀归一化等），修正多处与实现矛盾的注释。\n\n### 验证\n\n- `make verify` 完整通过（fmt/vet/test/codex-test/backup-test/web 全链路/audit）。\n- `go test ./...` 全部通过。"
 }

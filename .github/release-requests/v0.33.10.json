@@ -1,0 +1,6 @@
+{
+  "version": "v0.33.10",
+  "source_ref": "2b02b67e34e768a2847a8bf4904ee1696f285f0f",
+  "since_sha": "d50d03a89b612d5c362f78c3ca2cb22f1eec8d2e",
+  "changelog": "### 新增\n\n- **配额墙按套餐分卡展示。** 插件可以把账号配额拆成带标签的面板（ABI 新增 `QuotaPanel`，随 `QuotaResult.panels` 返回；双向兼容——旧网关解码时忽略、旧插件不发送）。glm 1.6.3 用它把「个人套餐 + 多个体验礼包」的账号渲染成每个套餐一张卡片：Coding 套餐一张、每个礼包各一张（最早结束的排前），卡片头部显示套餐名，搜索也能按面板标签匹配。面板仅用于展示，调度仍读扁平窗口列表，行为不变。\n  - 数据库新增 `account_quota_snapshots.panels` 列（迁移 117，与 main 上已占用的 116 错开；MySQL 走 AutoMigrate 携带步骤）。\n  - glm 的 plan_label 不再附带「[体验套餐生效中]」后缀。\n\n### 验证\n\n- gofmt / `go build` / 全量 `go test` 通过；web typecheck 与 1423 个 vitest 用例通过。\n- 迁移撞号（两个迁移同占 116）由 settlement cutover 测试当场拦截，重编号为 117 后全绿。\n- 源仓库 ABI 漂移门禁对新网关 10/10 通过。"
+}

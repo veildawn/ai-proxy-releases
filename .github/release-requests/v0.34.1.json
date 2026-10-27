@@ -1,0 +1,6 @@
+{
+  "version": "v0.34.1",
+  "source_ref": "dedd7acce9dd6093eeee5ab6d56b6ab34e1b8017",
+  "since_sha": "46eda9f3d0ca0029629a66b0ef947cab219eea8d",
+  "changelog": "### 修复\n\n- **Kiro 账号文件导入恢复可用。** v0.34.0 的导入/导出模块钩子在生产运行时上从未执行：运行器持有的接口断言与实际装配的运行时类型不匹配，静默失败后每个文件都落回通用解析器——kiro-manager-lite 导出（只有 email + 令牌对 + `provider: \"Github\"`，无 authMethod 标记）因此被当作「不支持的平台」跳过。现在运行时提供按供应商名的模块解析（与额度探针同一条活代际路径），并用编译期断言钉住装配类型，杜绝再次静默失配。回归测试用线上发布的 kiro 模块与真实失败负载端到端驱动。\n\n- **Kiro 1.3.1 / antigravity 1.10.2 恢复行为声明。** kiro 重新声明 simulated_cache / retry_in_band_error / cache_affinity，antigravity 重新声明 split_image_generations 与提示修复表——两者在清单改写中丢失，被供应商清单投影门禁拦下。市场已同步发布。\n\n### 验证\n\n- `go test ./...` 全部通过；前端 typecheck / lint / 1448 用例全绿。"
+}

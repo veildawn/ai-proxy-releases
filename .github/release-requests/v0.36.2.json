@@ -1,0 +1,6 @@
+{
+  "version": "v0.36.2",
+  "source_ref": "b872cf44fffed384113f27e48c839ebadd76b09f",
+  "since_sha": "30858336ef1dcdf17b7cc47aa12fb74d5b7d7d06",
+  "changelog": "### 修复：结构化输出的 responseSchema 原样穿过折叠，大写枚举打挂严格上游\n\n- **`responseSchema` 的类型枚举现在折叠时统一改写。** 三个出-gemini 折叠（Chat / Messages / Responses）早已把 functionDeclarations 的参数 schema 归一化为小写 JSON Schema 词汇表，但 `generationConfig.responseSchema` 一直原样透传——官方 SDK 按 protobuf JSON 标准拼写的正是大写枚举（`OBJECT`/`STRING`/…），到达校验小写词汇表的上游就是硬失败。实测（glm-5.3-flash，Gemini 面带 `responseSchema`）：大写稳定 503「网络错误」，小写正常出 JSON；且每次 503 都触发账号熔断冷却，**几发结构化输出请求就能把整个 glm 模型打进 \"all upstream accounts are cooling down\"**，连普通请求一起挂。DeepSeek 容忍大写，掩盖了这个问题。\n- **声明了但为空的 schema 现在三处折叠统一降级为 `json_object`**（原先两处如此、一处会发出空 `json_schema`）。\n- 实现在 ai-protocol v0.9.3（`schemanorm.ResponseSchemaOf`，三个折叠共用）；本仓库 bump 依赖并用线上抓到的报文钉住回归：大写 `responseSchema` 折叠出的 `response_format.json_schema.schema` 必须是小写。"
+}

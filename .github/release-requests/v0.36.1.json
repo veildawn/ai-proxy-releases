@@ -1,0 +1,6 @@
+{
+  "version": "v0.36.1",
+  "source_ref": "30858336ef1dcdf17b7cc47aa12fb74d5b7d7d06",
+  "since_sha": "02e001ce2a0d33d4fc1a16862e2d07ad085f63b0",
+  "changelog": "### 修复：Gemini 面对真实客户端的三个静默错（实测驱动）\n\n用 Gemini 原生协议的客户端（Antigravity CLI / agy，`/v1beta` + `x-goog-api-key`）直打网关、对 DeepSeek 与 GLM 上游逐项实测，修掉三个此前互相掩盖的转换缺陷。\n\n- **跨方言折叠不再把 `system` 强改成 `developer`。** 折叠层此前无条件改写系统提示词的角色名（为 GPT-6.1-sol 系所做的兼容），但「developer 到处都收」的前提不成立：智谱 GLM 的 chat API 直接拒收，400「角色信息不正确」，每个带 systemInstruction 的 Gemini 客户端回合在 GLM 上全军覆没——而 DeepSeek 两种角色都收，把问题掩盖到了今天。现在折叠统一写通用的 `system`；确需 `developer` 的模型由目录行声明 `system_to_developer` quirk，在路由计划对折叠后的报文应用（`applyPostFoldQuirks`），透传格维持原有的折叠前应用。**升级注意：目录里的 GPT-6.1-sol 系模型若经 Gemini/Messages 客户端调用，需为其行声明 `system_to_developer`。**\n\n- **字符串形式的 `systemInstruction` 不再被静默丢弃。** curl 风格的 `{\"systemInstruction\":\"...\"}` 在折叠层只认 parts 形式，此前整个系统提示词无声丢失（实测「必须用法语回答」以字符串形式下发，模型照样回英语）。拼写归一化层现在先把字符串提升为 parts 再折叠，camelCase / snake_case 两种拼法都覆盖。\n\n- **`parametersJsonSchema` 的工具声明落到 chat 线的 `parameters`。** ai-protocol 升到 v0.9.2：Antigravity CLI 的全部工具用这个新字段声明 schema，旧折叠只读 `parameters`，schema 被丢后 DeepSeek 见到无 schema 的工具就以 DSML 文本即兴「调用」，GLM 则回一个空 args 的 functionCall——两边都错得不动声色。\n\n回归测试用 agy 抓下来的真实报文钉住这三条契约：对象形式 systemInstruction 折叠为 `system` 角色、字符串形式被提升、`parametersJsonSchema` 完整落到 chat 的 `parameters`。"
+}

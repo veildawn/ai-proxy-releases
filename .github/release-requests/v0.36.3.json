@@ -1,0 +1,6 @@
+{
+  "version": "v0.36.3",
+  "source_ref": "c52af0af44a6b87ac5895dc4b2bc8cb7c91326d5",
+  "since_sha": "b872cf44fffed384113f27e48c839ebadd76b09f",
+  "changelog": "### 修复\n\n- **TokenHub 额度卡片的中文不再漏英文。** 「个人 / 独占 / 共享」三行的标签来自插件的机器名（`personal` / `exclusive` / `shared`），前端过一层标题化兜底后会把后两个直接印成 `Exclusive`、`Shared`。现在三行都有映射，中文卡片上读作「个人 · 本月」「独占 · 本月」「共享 · 本月」；`独占`、`共享` 沿用腾讯云控制台对同两个池子的叫法，英文保持 `Exclusive` / `Shared`。\n\n- **补上缺失的 newapi 图标，并把每个图标面拉到规范。** 图标集里一直没有 newapi 的标记，相关界面因此留空；这次按现有配方补齐，并统一了各处的落位与尺寸。\n\n无数据库迁移。"
+}

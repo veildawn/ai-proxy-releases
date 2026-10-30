@@ -1,0 +1,6 @@
+{
+  "version": "v0.37.0",
+  "source_ref": "8a21147a29c86e8d43643aba2e19d64e90786027",
+  "since_sha": "c52af0af44a6b87ac5895dc4b2bc8cb7c91326d5",
+  "changelog": "### 新增\n\n- **视频任务开始落库,轮询与内容下载接口上线。** sora 形状的 `POST /v1/videos` 现在把「哪个 provider 的哪个账号建了这条任务」记进 `video_tasks` 表——轮询请求里没有模型字段,正是这行记录告诉网关该问哪个账号要答案,任何别的账号都不认识这个任务 id。新增 `GET /v1/videos/:id`(状态)与 `GET /v1/videos/:id/content`(内容下载),只读、不进并发闸。计价按请求的 `seconds`,缺省或非法值按 sora 文档的四秒默认值计。\n\n- **日志支持按会话过滤,请求详情可批量下载。** 网关在解析、准入与结算链路记录客户端 session 身份,落进 `usage_events.session_id`(带索引);管理端日志页新增 session 过滤输入、chip 与列,用户端 API 同样可过滤。勾选的请求详情可打包下载为合并 JSON 或 ZIP 归档。\n\n- **限流拒绝开始说明额度窗口与恢复细节。** 触顶的拒绝条款现在携带窗口边界和「什么时候能再试」,接入文档同步更新,客户端拿到的不再只是一句拒绝。\n\n### 修复与改进\n\n- **管理端「系统」页展示路由编译失败与代次滞后。** 路由代次为 0、编译报错、或已编译代次落后于当前代次时,页面顶部给出告警;告警每 30 秒自动刷新。\n\n- **Gemini:空的 `reasoning_content` 不再凭空铸造 thought part。**(随 ai-protocol e7a186d)\n\n- **用量事件与 provider 模块解析提速。** `usage_events` 增加组合索引,provider 模块解析走快路径。\n\n- **部署备份:pg_dump 成功后文件才挪成正式名。** 失败的备份不再留下被 retention 收编、被 restore 挑中的半截 dump。\n\n### 升级说明\n\n- **三次数据库迁移自动执行**:119(`usage_events.session_id` 列与索引)、120(慢查询组合索引)、121(`video_tasks` 表)。\n- 离线模型与价格兜底钉在 registry 2026-10-30 快照(`41c10d1`)。"
+}

@@ -1,0 +1,6 @@
+{
+  "version": "v0.38.0",
+  "source_ref": "1953bb546085e6e35425ed776217f8ccd8cab1c1",
+  "since_sha": "8a21147a29c86e8d43643aba2e19d64e90786027",
+  "changelog": "### 新增\n\n- **插件可声明默认路由偏好(manifest tier),操作者配置绝对优先。** provider 清单新增可选 `tier` 字段(1 = 最优先):当某模型同时由多个 provider 供给、且操作者没有在 `routing.model_policies` 里为它配置任何策略时,网关按 manifest tier 排偏好组——未声明 tier 的 provider 落隐式末组。操作者只要为该模型配了策略(哪怕只有 strategy 没有 tiers),manifest 层就对该模型**完全失效**,两层互不合并,插件更新永远不会悄悄改写操作者排好的顺序。首个使用方:GLM 插件的 ZCode 体验套餐 lane 默认优先于付费 coding lane。\n\n### 修复与改进\n\n- **manifest tier 负值在解析期拒绝**,不会进到路由编译。\n- 面板 `CustomProvider` TS 类型声明 `tier` 字段(线契约对齐)。\n\n### 升级说明\n\n- **一次数据库迁移自动执行**:122(`custom_providers.tier` 列,INTEGER NOT NULL DEFAULT 0)。"
+}

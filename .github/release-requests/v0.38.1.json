@@ -1,0 +1,6 @@
+{
+  "version": "v0.38.1",
+  "source_ref": "d90659ef1b01941852ecb974ea55150b5faf1d8f",
+  "since_sha": "1953bb546085e6e35425ed776217f8ccd8cab1c1",
+  "changelog": "### 修复\n\n- **manifest tier 的升级陷阱:列默认 0 被当成操作者覆盖,默认偏好从未生效。** 0.38.0 的迁移把 `custom_providers.tier` 建成 NOT NULL DEFAULT 0,三方合并把这个默认值读成了操作者存过值——首个声明 tier 的插件升级(如 glm 1.8.7 的 tier=1)被记为本地覆盖,默认偏好被冻结在路由之外(实测 2026-10-31:礼包桶停在 482,590,560,所有请求仍走付费 coding lane)。列改为可空:NULL=从未声明,与操作者显式 0(压制默认)区分;CurrentValues/definitionFields 只在非空时发出该字段,合并按字段出现与否判定。迁移 123 撤销 NOT NULL 并清掉全部存量 0(面板此前无法设置 0,每个 0 都是陷阱残留)。\n\n### 升级说明\n\n- **一次数据库迁移自动执行**:123(`custom_providers.tier` 转可空并清洗)。被烧行需在下一次插件版本升级(重新 apply manifest)时自动愈合。"
+}

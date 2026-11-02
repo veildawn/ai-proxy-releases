@@ -1,0 +1,6 @@
+{
+  "version": "v0.38.3",
+  "source_ref": "14add87a4bf94586cd98cae502197dbdf33e33fb",
+  "since_sha": "d79ded811f305f988d368f599267770d278dab8e",
+  "changelog": "- **公开模型列表保留生图模型。** Codex 等生图请求折进对话模型绘制，账号探测名单未收录或聊天探测记为不可服务时，不再把 gpt-image 等图像模型从 GET /v1/models 中去掉。"
+}

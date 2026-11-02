@@ -148,3 +148,9 @@ ai-proxy-service version
 gh release download --repo veildawn/ai-proxy-releases -p 'checksums.txt' -p '*.tar.gz'
 sha256sum -c checksums.txt --ignore-missing
 ```
+
+## 许可证
+
+本仓库里的安装脚本、Docker Compose 文件、Homebrew formula 和文档以 MIT 许可证发布，版权所有 2026 Veildawn。见 [LICENSE](LICENSE)。
+
+这份许可不包括随每个 GitHub Release 发布的网关预编译二进制。

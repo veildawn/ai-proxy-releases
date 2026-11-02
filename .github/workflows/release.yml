@@ -269,7 +269,14 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
+          # Public half of the release ed25519 key. Empty fails the build:
+          # a release binary without it reports "nokey" and cannot self-update.
+          RELEASE_PUBLIC_KEY: ${{ secrets.RELEASE_PUBLIC_KEY }}
         run: |
+          if [ -z "${RELEASE_PUBLIC_KEY}" ]; then
+            echo "::error::RELEASE_PUBLIC_KEY secret is empty; refusing a release build that cannot verify its own updates"
+            exit 1
+          fi
           VERSION="${{ needs.prepare.outputs.version }}"
           VERSION="${VERSION#v}"
           COMMIT="$(git rev-parse --short HEAD)"
@@ -290,7 +297,8 @@ jobs:
               -X ${MODULE}/internal/buildinfo.Version=${VERSION} \
               -X ${MODULE}/internal/buildinfo.Commit=${COMMIT} \
               -X ${MODULE}/internal/buildinfo.BuildDate=${BUILD_DATE} \
-              -X ${MODULE}/internal/buildinfo.BuildType=release" \
+              -X ${MODULE}/internal/buildinfo.BuildType=release \
+              -X ${MODULE}/internal/buildinfo.ReleasePublicKey=${RELEASE_PUBLIC_KEY}" \
             -o "dist/${BIN}" ./cmd/server
 
       - name: Package
@@ -448,6 +456,34 @@ jobs:
         run: |
           sha256sum *.tar.gz *.zip > checksums.txt
           cat checksums.txt
+
+      # Sign the checksums the updater verifies. The private key stays in the
+      # RELEASE_SIGNING_KEY secret; the matching public key was compiled into
+      # the binaries above. An unsigned release is one the panel must refuse.
+      - name: Checkout signer
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.SOURCE_REPO }}
+          ref: ${{ needs.prepare.outputs.source_ref }}
+          token: ${{ secrets.SOURCE_REPO_TOKEN }}
+          path: source
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.27"
+          cache: false
+
+      - name: Sign checksums
+        env:
+          RELEASE_SIGNING_KEY: ${{ secrets.RELEASE_SIGNING_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${RELEASE_SIGNING_KEY}" ]; then
+            echo "::error::RELEASE_SIGNING_KEY secret is empty; refusing to publish unsigned checksums"
+            exit 1
+          fi
+          (cd source && go run ./scripts/release-sign "${GITHUB_WORKSPACE}/dist/checksums.txt")
+          test -s dist/checksums.txt.sig
 
       # The notes render inside the admin panel's update dialog, which is a
       # plain-text (whitespace-pre-wrap) box — NOT markdown — and must carry

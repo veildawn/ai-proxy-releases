@@ -173,3 +173,9 @@ Three rules the request parser will not forgive:
 - The `changelog` is plain text rendered verbatim in the admin panel's update dialog: start with `更新`, one `·` bullet per change, no markdown.
 
 Run the CI workflow against the same source ref first (`gh workflow run ci.yml -f source_ref=<sha>`) — nothing else tests it before the release builds.
+
+## License
+
+The install scripts, Docker Compose files, Homebrew formula, and documentation in this repository are under the MIT License, copyright 2026 Veildawn. See [LICENSE](LICENSE).
+
+That grant does not cover the prebuilt gateway binary published with each GitHub Release.

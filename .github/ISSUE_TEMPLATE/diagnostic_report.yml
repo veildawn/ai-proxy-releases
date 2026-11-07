@@ -1,0 +1,59 @@
+name: 诊断助手报告 / Copilot Diagnostic Report
+description: 由 ai-proxy-service 内置「诊断助手（Diagnostic Copilot）」经 Tier-2 脱敏后自动预填的结构化诊断报告
+title: ""
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        本表单专为 `ai-proxy-service` **诊断助手（Diagnostic Copilot）→ 一键提 Issue（Mode A）** 自动预填设计。
+        - 若上方提示「URL 因 6,000 字节上限已截断」，诊断助手已同步将完整未截断的 Tier-2 脱敏报告复制至剪贴板，请在对应文本框中按 `Ctrl+V` / `⌘V` 粘贴补全。
+        - **请再次核对下方内容不含任何明文密钥（`sk-*`、`aps_*`、`apm_*`、`ghp_*`）、真实邮箱、住宅代理出口 IP 或私有域名。**
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: 概要
+      description: 故障核心现象、触发链路与初步根因结论摘要。
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 环境
+      description: 网关版本（含 staged_binary / image_version）、运行平台、入口协议方言与上游供应商类型（匿名化后）。
+    validations:
+      required: true
+
+  - type: textarea
+    id: phenomenon
+    attributes:
+      label: 现象
+      description: 客户端观测到的 HTTP 状态码、`x-aps-limit-source`、脱敏错误响应信封或流式异常表现。
+    validations:
+      required: true
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: 诊断摘要（Doctor 巡检与多跳决策链路）
+      description: 确定性 Doctor 命中项（`D-ADM-*` / `D-USR-*`）、脱敏多跳故障转移表（`account_#1` / `proxy_#1`）及近期错误聚合。若因 URL 长度上限被截断，请按 Ctrl+V / ⌘V 粘贴剪贴板完整报告。
+    validations:
+      required: false
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: 复现步骤与期望行为
+      description: 触发该问题的最小请求特征或配置组合，以及期望行为。
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: privacy_check
+    attributes:
+      label: 公开脱敏确认
+      options:
+        - label: 我已核对以上脱敏内容，确认不含任何 API Key、管理令牌、邮箱、代理地址/IP 或原始用户对话正文，同意公开发布至 veildawn/ai-proxy-releases
+          required: true

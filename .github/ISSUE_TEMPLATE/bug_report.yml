@@ -1,0 +1,64 @@
+name: Bug 报告 / 故障反馈
+description: 报告网关路由、配额结算、上游通道或管理面板的异常行为（支持从管理台「诊断助手」一键预填）
+title: ""
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！若你正在运行 `ai-proxy-service`，可直接通过管理台右侧 **诊断助手 → 生成 Issue 草稿** 自动汇总脱敏环境与链路摘要。
+        **请确认下方内容不包含任何明文密钥（`sk-*`、`aps_*`、`apm_*`）、账号邮箱、代理密码或私有域名/IP。**
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: 概要
+      description: 用两三句话说明发生了什么问题、触发条件，以及实际结果与预期的差异。
+      placeholder: |
+        例如：流式请求在中途断开时走兜底估算路径，未计入缓存命中维度，导致结算金额偏高。
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 环境
+      description: 服务版本（请区分 staged_binary 与容器 image_version）、部署方式、数据库版本、涉及的入口协议与供应商类型。
+      placeholder: |
+        - `ai-proxy-service` 版本：v0.44.0（Docker / `/data/bin` 自升级）
+        - 数据库：PostgreSQL 16
+        - 观测入口：`/v1/responses`（流式），供应商类型 `codex`
+    validations:
+      required: true
+
+  - type: textarea
+    id: phenomenon
+    attributes:
+      label: 现象
+      description: 实际观测到的响应状态码、脱敏错误信封、对照样本或面板表现（支持直接粘贴 Markdown 表格或代码块）。
+    validations:
+      required: true
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: 诊断摘要（可选）
+      description: 决策链路（Decision Trace）、多跳故障转移摘要或脱敏日志。若浏览器 URL 因 6,000 字节上限被截断，请在此处按 Ctrl+V / ⌘V 粘贴剪贴板中的完整内容。
+    validations:
+      required: false
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: 复现步骤与期望行为
+      description: 稳定或按条件复现该问题的步骤，以及期望的修复口径。
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: privacy_check
+    attributes:
+      label: 脱敏确认
+      options:
+        - label: 我已核对以上内容，确认不含任何 API Key、管理令牌、邮箱、代理地址/IP 或原始用户对话内容
+          required: true

@@ -1,0 +1,6 @@
+{
+  "version": "v0.45.0",
+  "source_ref": "8fb35010da5ba6141799cf1a2d7e3877634c2943",
+  "since_sha": "e3ca96d724def90bac0f4570d9c43cd1669cb8b8",
+  "changelog": "### 新增\n\n- **新增类 AgentScope 智能诊断助手（Diagnostic Copilot）悬浮与停靠工作台。** 控制台全局支持「右侧停靠栏（Docked Sidebar）」与「自由悬浮窗（Floating Window）」双模切换，支持边缘磁吸贴边、最小化与左右换边；接入全局快捷键 `⌘J` / `Ctrl+Shift+D` 与命令面板（`⌘K`）动作集成；遵循 `--z-copilot: 50` 语义层级，全局 Toast、配置保存栏（`SaveBar`）及全站批量选择栏实现动态几何避让。\n- **内置故障期自愈的双引擎排障内核（确定性自检 Doctor + 跨方言只读 ReAct 智能体）。** 确定性自检引擎内置 `D-ADM-01` 至 `D-ADM-12` 运维巡检规则，零外部大模型依赖、毫秒级快速定位出站代理悬空、账号掉线与路由失配等故障；有界只读 ReAct 智能体集成 9 大管理工具与多方言流式推理（`decisions.MarkInternal` 防递归调用），单工具 5s 超时与 8KB 截断，支持工具调用原始数据切换展示。\n- **全场景业务触发点无缝接入（T1～T7）。** 在请求日志抽屉（`request-inspector`）、账号抽屉（`account-inspector-drawer`）、系统运行状态（`runtime-info`）及插件集成（`integration-inspector-drawer`）中支持一键靶向注入故障上下文开展定向排障。\n- **同构两级脱敏与一键提交 GitHub Issue 至 Release 仓库。** 实现 `R00`～`R19` 规则组（API Key、JWT、私钥 PEM、内部 IP/邮箱/主机名脱敏），前后端双引擎一致并在提交前执行 `ScanSecrets` 强拦截；支持 Mode A（URL 压缩预填，恒 `<= 6,000` 字节防 GitHub 414 溢出 + 剪贴板未截断 Markdown 同步）与 Mode B1（Classic PAT 直连 GitHub API 提单）；配套 `veildawn/ai-proxy-releases` 规范化 Issue 表单模板（`diagnostic_report.yml` 等），提单自动挂载 `bug` 标签。\n- **用户端新增独立 `/m` 移动端自适应工作台。** 提供移动端双向桌面模式切换体验。\n"
+}

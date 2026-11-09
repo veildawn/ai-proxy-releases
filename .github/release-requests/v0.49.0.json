@@ -1,0 +1,6 @@
+{
+  "version": "v0.49.0",
+  "source_ref": "c1be479786c40575d92c18c7f8f9b37ac5c92bd0",
+  "since_sha": "690d0863af6e35194849e8459cec8043c3da2db3",
+  "changelog": "### 新特性 (Features)\n\n- **OpenAI Codex 生图/改图与 GPT Image 2.6 动态 GIF 全链路支持（`openai@1.7.8`）**：\n  - **OpenAI 插件升级至 `openai@1.7.8`**：新增 `gpt-image-2.6` 模型定义，修复 Codex OAuth 订阅账号走 `/backend-api/codex/responses` 时的 `image_generation` 内置工具自动注入、输入参考图（`data:` URL / HTTP URL / `file_id`）透传以及流式 SSE `response.completed` / `response.output_item.done` 图片结果提取。\n  - **支持 `output_format: \"gif\"` 动态 GIF 生成与编辑**：网关 `/v1/images/generations` 与 `/v1/images/edits`、流式图片事件 MIME 推断及用户态对话图片附件存储全面支持 `image/gif`。\n  - **Playground 试玩、Chat 对话与 `/connect` 接入工作台联动升级**：图像工坊新增 `GIF (Animated)` 输出格式选择（切换时自动对齐 `gpt-image-2.6`）、16:9 / 9:16 宽竖屏常用尺寸与 `.gif` 文件下载后缀；Chat 画图模式新增「动态 GIF」快捷开关；同步更新中英文 Agent 接入文档与 `/connect` 图像生成示例。\n"
+}

@@ -1,0 +1,6 @@
+{
+  "version": "v0.47.0",
+  "source_ref": "37b31d94c07717cdfdf585f117e81f4ef4517657",
+  "since_sha": "e05d4b5e3f92ada360a97276a9c4a631f5ce52e3",
+  "changelog": "### 新增\n\n- **重构插件包安装页面为分站式工作台（Substation Workbench）。** 全新升级 `/admin/package-installation` 状态机与分步可视化引导体验，统一展示插件校验、签名核验与落盘应用全流程日志状态。\n\n### 修复与改进\n\n- **Gemini 插件（`gemini@1.3.9`）升级为纯声明式原生 `gemini` 协议集成。** 移除旧版 Rust Wasm 模块，改为直接声明标准 `gemini`（`generateContent`）协议与 `operation_url: true`，由网关原生驱动 `:generateContent`、`:streamGenerateContent`、`:countTokens` 及 OpenAI Chat / Anthropic Messages / Responses / Images 全协议互转，彻底消除旧版 Wasm 模块校验报错。\n- **修复 Wasm 插件列表摘要清单重提报 `modules[\"provider\"] is 0 bytes` 问题。** 后端 `plugins/validate` 与更新接口支持按已安装版本自动回填列表接口脱敏省略的模块字节并复用官方市场签名；前端插件详情抽屉改为拉取单插件完整详情，避免使用列表脱敏快照提交。\n- **完善 Google Gemini 账号模型自动发现与过滤。** 对 `gemini` 协议模型探测自动追加 `?pageSize=1000` 防止默认 50 条分页截断丢失新模型，映射 `inputTokenLimit` 上下文窗口，并自动过滤仅支持 `embedContent` / `bidiGenerateContent` 的非文本生成模型。\n- **增强网关缓冲回包归一化与管理后台模型测活错误透传。** 修复非流式请求在 Wasm 模块返回单帧 SSE 时的 JSON 归一化，以及上游返回 `>= 400` 错误时状态码与错误消息的完整保留。\n"
+}

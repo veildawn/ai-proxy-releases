@@ -1,0 +1,6 @@
+{
+  "version": "v0.50.4",
+  "source_ref": "cbbeb0dd15de927daf7b85b8764ef0481b2c2214",
+  "since_sha": "a44332eec9284a5cb54934157c3fbe6b465023a9",
+  "changelog": "### 新功能与架构升级 (Features)\n\n- **`antigravity-acp` 多账号隔离 CLI OAuth 登录与专属伴随进程路由**：\n  - 登录入口从「插件详情页」收口至标准的「账号管理 → 添加账号」OAuth 引导流程（`HostCLIAuth`）：添加账号时直接在面板内打开 Google 授权链接并粘贴回调 URL 或授权码即可完成宿主机 `agy acp --login`，无需 SSH 登录服务器；插件环境检查面板回归纯粹的宿主机程序探测与伴随服务状态/重启职责。\n  - 每个本机托管账号拥有各自独立的隔离目录（`<configDir>/host-daemons/antigravity-acp/profiles/<profileID>/{os-home,agent-home,key}`）、独立的 64 位随机密钥与按需拉起的专属 `acp-bridge serve` 子进程，统一经本机回环入口 `127.0.0.1:8787` 按密钥多路复用转发；同时保留「改用密钥连接」接入外部自管 `acp-bridge`。\n  - 账号级出站代理贯穿与本机回环直连：登录与运行态子进程自动继承对应账号绑定的出站代理（`proxy_id` / `egress_selector`），网关访问 `127.0.0.1` / `localhost` / `::1` 本机回环上游时自动绕过出站代理直连；删除账号或同邮箱重登换号时自动终止旧子进程并清理隔离目录。\n- **`/admin/concurrency` 并发工作台重构**：升级并发监控工作台布局，并修复用户并发上限编辑后的状态同步。\n"
+}

@@ -1,0 +1,6 @@
+{
+  "version": "v0.50.2",
+  "source_ref": "41bc219a29ee1ab769af7838422855e4a9083ee5",
+  "since_sha": "0a8f3c10709d242538eefbc2f066e38f4d001ff4",
+  "changelog": "### 修复 (Fixes)\n\n- **网关启动与 systemd 部署自动将 `~/.local/bin` 纳入 `PATH`**：\n  - `ai-proxy-service serve`（非容器部署）启动时若检测到 `PATH` 中未包含当前运行用户的 `~/.local/bin`，会自动将其前置补入 `PATH`。旧实例通过管理面板自更新重启后即可直接识别面板一键安装的宿主机工具（如 `/var/lib/ai-proxy-service/.local/bin/agy`），无需手动修改 systemd unit 或 `.env`。\n  - `deploy/scripts/install.sh` 与 `deploy/systemd/ai-proxy.service` 默认注入 `HOME` 及前置 `~/.local/bin` 的 `PATH`（置于 `EnvironmentFile` 之前，`.env` 中显式配置的 `PATH=` 仍可优先覆盖）。\n"
+}

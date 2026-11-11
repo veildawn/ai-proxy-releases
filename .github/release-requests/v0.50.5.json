@@ -1,0 +1,6 @@
+{
+  "version": "v0.50.5",
+  "source_ref": "486af72067a8d2c30cbeb87f7a2409e3b98f4453",
+  "since_sha": "cbbeb0dd15de927daf7b85b8764ef0481b2c2214",
+  "changelog": "### 修复与优化 (Fixes)\n\n- 修复 `antigravity-acp` 模型列表按实际家族折叠显示。\n- 新增账号默认使用邮箱前缀作为标签。\n- 编辑账号时不再让空的外部 Bridge 密钥覆盖已保存凭证，也避免错误填充系统密码导致登录失效。\n- 自定义配额查询支持标准化 `result_path`，修复 `json: unknown field \"result_path\"`。\n- 运行时指标改为输出 GC pacing，避免累计计数误导。\n"
+}

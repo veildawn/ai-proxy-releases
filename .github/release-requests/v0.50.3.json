@@ -1,0 +1,6 @@
+{
+  "version": "v0.50.3",
+  "source_ref": "a44332eec9284a5cb54934157c3fbe6b465023a9",
+  "since_sha": "41bc219a29ee1ab769af7838422855e4a9083ee5",
+  "changelog": "### 新功能 (Features)\n\n- **`antigravity-acp` 本机桥服务自动托管与面板 `agy` 登录**：\n  - 新增 `internal/hostdaemon` 宿主机伴随服务托管器：当 `antigravity-acp` 插件启用且供应商地址指向本机回环地址时，网关在启动、插件安装/启用、一键安装 `acp-bridge` / `agy` 后自动拉起并守护 `acp-bridge serve`；在插件禁用、卸载或网关退出时自动关闭，无需手工执行命令或配置额外 systemd 服务。\n  - 自动生成并持久化本机共享密钥（`<configDir>/host-daemons/antigravity-acp/key`，`0600`），添加本机 `antigravity-acp` 账号时留空 `Bridge 密钥` 即可自动绑定托管密钥（填写外部 `ACP_BRIDGE_KEY` 连接远端桥接服务依然兼容）。\n  - 插件环境检查面板新增伴随服务状态/重启/日志抽屉，并内置交互式 `agy` CLI Google OAuth 登录向导（打开授权链接并粘贴回调地址即可在面板内完成宿主机 `agy` 登录，无需 SSH 上机）。\n- **Gemini 请求参数清洗与 400 自动降级恢复**：统一收敛 `generationConfig` / `thinkingLevel` 参数卫生处理与上游 `400` 降级重试。\n- **`/admin/runtime` 运行时工作台重构**：升级运行时监控面板布局，并修复实例运行时长与连接/协程泄漏告警判定。\n\n### 依赖更新 (Chores)\n\n- 升级模型注册表 `ai-model-registry` 至 `99836effadbf`。\n"
+}

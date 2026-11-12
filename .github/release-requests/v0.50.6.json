@@ -1,0 +1,6 @@
+{
+  "version": "v0.50.6",
+  "source_ref": "e930a24efa669649a23dd141c6fa4d326497ba59",
+  "since_sha": "486af72067a8d2c30cbeb87f7a2409e3b98f4453",
+  "changelog": "### 新增 (Features)\n\n- 插件 OAuth 回调新增 manifest 声明的 `raw` 格式：厂商回调不返回授权码、而返回签名的完整 query（例如 Trae 的 `userJwt` / `userInfo`）时，宿主把完整回调交给插件的 `auth_poll` 自行解析和校验；未声明该格式的 provider 仍严格要求 `code` 与宿主 `state`。\n- Trae 国内版和国际版改用独立的 `14556` 本机回调端口，并在授权回调 URL 中带上宿主传入的 state，粘贴完整回调、本机 loopback 与公共 relay 都能正确找到登录会话。\n\n### 修复 (Fixes)\n\n- 修复 Trae 浏览器授权完成后登录一直停留在 pending 的问题；版本同步发布为 `trae 1.0.1` 和 `trae-intl 1.0.2`。\n- 修复 hostdaemon 未把桥接容量传给子进程的问题。\n\n### 优化 (Improvements)\n\n- 清理控制台若干 AI 风格与冗长文案。\n"
+}

@@ -1,0 +1,6 @@
+{
+  "version": "v0.50.7",
+  "source_ref": "2956b6a2d563038b0b0cda3411f612d37111f55f",
+  "since_sha": "e930a24efa669649a23dd141c6fa4d326497ba59",
+  "changelog": "### 修复 (Fixes)\n\n- 修复 Chat Completions / Responses 客户端访问 Messages 协议上游时推理档位丢失的问题：选择 `xhigh` / `max`，或同时发送 `thinking` 块与档位（ZCode、DeepSeek 风格客户端的写法）时，上游收不到该档位，请求日志也被记为 `high`。现在档位以 `output_config.effort` 送达上游，日志显示实际发出的档位；例如 ZCode 选 Max 思考度走 GLM 体验套餐（`glm-start-plan`）时不再降为 `high`。\n- 相应地，这类请求里的 `xhigh` / `max` 不再被静默降为 `high`：模型本身不支持所选档位时上游会直接报错，可在模型的「推理档位」中声明上限让网关自动降档。\n- 发布构建缺少自更新签名公钥时在构建阶段直接失败，不再产出无法校验更新的发布包。\n"
+}

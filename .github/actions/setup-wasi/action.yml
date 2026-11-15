@@ -17,6 +17,7 @@ runs:
       with:
         workspaces: runtime/provider-wasi
         shared-key: provider-wasi-${{ inputs.toolchain }}
+        cache-on-failure: true
     - shell: bash
       env:
         RUSTUP_TOOLCHAIN: ${{ inputs.toolchain }}

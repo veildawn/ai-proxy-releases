@@ -264,9 +264,13 @@ jobs:
 
       # Keyed per target: GOCACHE entries are GOOS/GOARCH-specific. Per-run key
       # + prefix restore = always save a fresh snapshot, restore the newest.
+      - name: Locate native Go build cache
+        id: go-cache
+        run: echo "path=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
+
       - uses: actions/cache@v4
         with:
-          path: ~/.cache/go-build
+          path: ${{ steps.go-cache.outputs.path }}
           key: go-build-rel-${{ matrix.goos }}-${{ matrix.goarch }}-${{ github.run_id }}
           restore-keys: go-build-rel-${{ matrix.goos }}-${{ matrix.goarch }}-
 

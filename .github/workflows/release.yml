@@ -495,8 +495,14 @@ jobs:
     steps:
       - uses: actions/download-artifact@v8
         with:
+          pattern: archive-*
           path: dist
           merge-multiple: true
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: extras
+          path: dist
 
       - name: Generate checksums
         working-directory: dist
@@ -584,6 +590,7 @@ jobs:
 
       - uses: actions/download-artifact@v8
         with:
+          pattern: archive-*
           path: dist
           merge-multiple: true
 

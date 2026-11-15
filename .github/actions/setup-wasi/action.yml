@@ -7,6 +7,9 @@ inputs:
 runs:
   using: composite
   steps:
+    - if: runner.os == 'macOS'
+      shell: bash
+      run: brew list llvm >/dev/null 2>&1 || brew install llvm
     - uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ inputs.toolchain }}

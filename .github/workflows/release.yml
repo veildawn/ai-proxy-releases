@@ -345,6 +345,7 @@ jobs:
               -X ${MODULE}/internal/buildinfo.ReleasePublicKey=${RELEASE_PUBLIC_KEY}" \
             -o "dist/${BIN}" ./cmd/server
           "./dist/${BIN}" version
+          CGO_ENABLED=1 go test -count=1 -run '^TestProductionGuest(HTTP|Socket)$' ./pkg/providerwasi
 
       - name: Package
         run: |

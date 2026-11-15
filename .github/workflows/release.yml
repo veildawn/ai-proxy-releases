@@ -173,9 +173,8 @@ jobs:
     if: needs.prepare.outputs.should_release == 'true'
     strategy:
       matrix:
-        # The build is CGO_ENABLED=0 pure Go, so the darwin and windows targets
-        # cross-compile on a linux runner — no mac/windows runners needed. Only
-        # linux/arm64 keeps a native runner, as it already had one.
+        # Wasmtime is linked through CGo: every target needs native Rust/C.
+        # Linux builds inside Debian bookworm to match the runtime image ABI.
         include:
           - runner: ubuntu-latest
             goos: linux
@@ -183,16 +182,21 @@ jobs:
           - runner: ubuntu-24.04-arm
             goos: linux
             goarch: arm64
-          - runner: ubuntu-latest
+          - runner: macos-15-intel
             goos: darwin
             goarch: amd64
-          - runner: ubuntu-latest
+          - runner: macos-15
             goos: darwin
             goarch: arm64
-          - runner: ubuntu-latest
+          - runner: windows-latest
             goos: windows
             goarch: amd64
     runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "13.0"
     steps:
       # Depth 1 (the default): the only git use below is rev-parse HEAD, so the
       # full-history fetch was pure wait.
@@ -265,6 +269,31 @@ jobs:
           key: go-build-rel-${{ matrix.goos }}-${{ matrix.goarch }}-${{ github.run_id }}
           restore-keys: go-build-rel-${{ matrix.goos }}-${{ matrix.goarch }}-
 
+      - name: Set up Windows GNU compiler
+        id: msys2
+        if: matrix.goos == 'windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils zip unzip
+          path-type: inherit
+
+      - name: Select Windows GNU tools
+        if: matrix.goos == 'windows'
+        env:
+          MSYS_ROOT: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          echo "$MSYS_ROOT/mingw64/bin" >> "$GITHUB_PATH"
+          echo "$MSYS_ROOT/usr/bin" >> "$GITHUB_PATH"
+          echo "CC=gcc" >> "$GITHUB_ENV"
+          echo "RUSTUP_TOOLCHAIN=1.97.1-x86_64-pc-windows-gnu" >> "$GITHUB_ENV"
+
+      - name: Build native WASI runtime
+        if: matrix.goos != 'linux'
+        uses: veildawn/ai-proxy-releases/.github/actions/setup-wasi@main
+        with:
+          toolchain: ${{ matrix.goos == 'windows' && '1.97.1-x86_64-pc-windows-gnu' || '1.97.1' }}
+
       - name: Build binary
         env:
           GOOS: ${{ matrix.goos }}
@@ -292,7 +321,22 @@ jobs:
           fi
           echo "bin=$BIN" >> "$GITHUB_ENV"
           mkdir -p dist
-          CGO_ENABLED=0 go build -trimpath -buildvcs=false \
+          if [ "$GOOS" = linux ]; then
+            # Build in the same libc generation as the published Docker image.
+            docker build --target go-builder -f deploy/docker/Dockerfile \
+              --build-arg TARGETOS="$GOOS" --build-arg TARGETARCH="$GOARCH" \
+              --build-arg VERSION="$VERSION" --build-arg COMMIT="$COMMIT" \
+              --build-arg BUILD_DATE="$BUILD_DATE" --build-arg BUILD_TYPE=release \
+              --build-arg RELEASE_PUBLIC_KEY="$RELEASE_PUBLIC_KEY" \
+              -t ai-proxy-release-builder .
+            container=$(docker create ai-proxy-release-builder)
+            trap 'docker rm -f "$container" >/dev/null' EXIT
+            docker cp "$container:/out/ai-proxy-service" "dist/$BIN"
+            chmod +x "dist/$BIN"
+            docker run --rm --entrypoint /out/ai-proxy-service ai-proxy-release-builder version
+            exit 0
+          fi
+          CGO_ENABLED=1 go build -trimpath -buildvcs=false \
             -ldflags "-s -w \
               -X ${MODULE}/internal/buildinfo.Version=${VERSION} \
               -X ${MODULE}/internal/buildinfo.Commit=${COMMIT} \
@@ -300,6 +344,7 @@ jobs:
               -X ${MODULE}/internal/buildinfo.BuildType=release \
               -X ${MODULE}/internal/buildinfo.ReleasePublicKey=${RELEASE_PUBLIC_KEY}" \
             -o "dist/${BIN}" ./cmd/server
+          "./dist/${BIN}" version
 
       - name: Package
         run: |
@@ -438,7 +483,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   release:
-    needs: [prepare, build]
+    needs: [prepare, build, image]
     if: needs.prepare.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -454,7 +499,7 @@ jobs:
         # cannot find a checksum for, so omitting it silently breaks windows
         # self-update rather than failing the release.
         run: |
-          sha256sum *.tar.gz *.zip > checksums.txt
+          sha256sum -- *.tar.gz *.zip > checksums.txt
           cat checksums.txt
 
       # Sign the checksums the updater verifies. The private key stays in the

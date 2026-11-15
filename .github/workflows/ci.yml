@@ -68,6 +68,9 @@ jobs:
           key: go-build-lint-${{ github.run_id }}
           restore-keys: go-build-lint-
 
+      - name: Build native WASI runtime
+        uses: veildawn/ai-proxy-releases/.github/actions/setup-wasi@main
+
       - name: gofmt
         run: |
           unformatted=$(gofmt -l internal cmd)
@@ -151,6 +154,9 @@ jobs:
       # -covermode=atomic is gone deliberately: nothing ever consumed the
       # numbers, and on top of -race the atomic counters were a real slice of
       # the gateway package's ten minutes. Re-add it only with a consumer.
+      - name: Build native WASI runtime
+        uses: veildawn/ai-proxy-releases/.github/actions/setup-wasi@main
+
       - name: Go test (race)
         env:
           SHARD: ${{ matrix.shard }}
@@ -253,6 +259,9 @@ jobs:
       # make smoke builds bin/ai-proxy-service itself (scripts/smoke-test.sh
       # runs `make build`), so this job needs no frontend: the SPA assets are
       # whatever the checkout carries, which the smoke flow does not exercise.
+      - name: Build native WASI runtime
+        uses: veildawn/ai-proxy-releases/.github/actions/setup-wasi@main
+
       - name: Smoke test
         env:
           JWT_SECRET: smoke-test-jwt-secret-at-least-32-chars!!

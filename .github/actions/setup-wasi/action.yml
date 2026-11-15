@@ -1,0 +1,20 @@
+name: Build Provider WASI runtime
+description: Build the pinned Wasmtime static library used by CGo.
+inputs:
+  toolchain:
+    description: Native Rust toolchain (GNU on Windows to match CGo).
+    default: '1.97.1'
+runs:
+  using: composite
+  steps:
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: ${{ inputs.toolchain }}
+    - uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: runtime/provider-wasi
+        shared-key: provider-wasi-${{ inputs.toolchain }}
+    - shell: bash
+      env:
+        RUSTUP_TOOLCHAIN: ${{ inputs.toolchain }}
+      run: ./runtime/provider-wasi/build.sh

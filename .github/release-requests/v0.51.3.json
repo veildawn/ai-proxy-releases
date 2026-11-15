@@ -1,0 +1,6 @@
+{
+  "version": "v0.51.3",
+  "source_ref": "5c0bc8810343ade1fd6cdf162e0ccd25f3ab6f3f",
+  "since_sha": "9750d09ad2519e906432035f9f070c007df45b66",
+  "changelog": "更新\n\n· 添加和编辑账号时支持中文级联选择，先选择大区，再选择具体模型调用区域；切换大区会同步更新下级选项。\n· 支持 Vertex 1.0.11：上传 Google Cloud 凭证 JSON 并填写 API Key 后，自动识别项目，默认使用全球端点，无需手动拼接 Base URL。\n· 支持按需指定 Vertex 调用区域或覆盖项目 ID，并兼容自定义上游地址与在线模型目录刷新。\n"
+}

@@ -172,6 +172,7 @@ jobs:
     needs: prepare
     if: needs.prepare.outputs.should_release == 'true'
     strategy:
+      fail-fast: false
       matrix:
         # Wasmtime is linked through CGo: every target needs native Rust/C.
         # Linux builds inside Debian bookworm to match the runtime image ABI.

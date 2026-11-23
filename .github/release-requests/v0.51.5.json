@@ -1,0 +1,6 @@
+{
+  "version": "v0.51.5",
+  "source_ref": "846d68d4b62b0cc7cf8fba0e863316fa124a3ca9",
+  "since_sha": "2a0e50c7c6dd01a4b2a4079cdccaa0a4ff95bc79",
+  "changelog": "更新\n\n· 流式请求等待上游响应头的默认超时时间从 60 秒延长到 180 秒（非流式补全使用各自的预算，不受影响），给较慢的代理和首字节较慢的上游留出更多余量；仍可通过 routing.upstream_header_timeout_ms 调整，对新请求即时生效。\n· 请求发出前发生的连接失败（DNS 解析、TCP 连接、TLS 握手、代理与 SOCKS5 建连）现在能被准确识别，归因为连接问题而不是账号故障。\n· 更新内嵌的 Provider 网络组件，以支持上述连接阶段的识别。\n"
+}
